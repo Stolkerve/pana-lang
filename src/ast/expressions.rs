@@ -1,0 +1,66 @@
+use std::fmt::Display;
+
+use crate::{ast::statements::BlockStatement, token::Token};
+
+pub type FnParams = Vec<Expression>;
+
+#[derive(Debug, Clone)]
+pub enum Expression {
+    Identifier(String),
+    IntLiteral(i64),
+    BooleanLiteral(bool),
+    FnLiteral {
+        params: FnParams,
+        body: BlockStatement,
+    },
+    Prefix {
+        operator: Token,
+        right: Box<Expression>,
+    },
+    Infix {
+        left: Box<Expression>,
+        right: Box<Expression>,
+        operator: Token,
+    },
+    If {
+        condition: Box<Expression>,
+        consequence: BlockStatement,
+        alternative: BlockStatement,
+    },
+    Call {
+        function: Box<Expression>, // fn literal o identifier
+        arguments: FnParams,
+    },
+}
+
+impl Display for Expression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Expression::Identifier(ident) => write!(f, "{}", ident),
+            Expression::IntLiteral(int) => write!(f, "{}", int),
+            Expression::Prefix { operator, right } => write!(f, "{}{}", operator, right),
+            Expression::Infix {
+                left,
+                right,
+                operator,
+            } => write!(f, "({}{}{})", left, operator, right),
+            Expression::BooleanLiteral(boolean) => write!(f, "{}", boolean),
+            Expression::If { condition, .. } => write!(f, "if {} {{...}}", condition),
+            Expression::FnLiteral { params, .. } => {
+                write!(f, "fn({}) {{...}}", format_arguments(params))
+            }
+            Expression::Call {
+                function,
+                arguments,
+            } => write!(f, "{}({})", function, format_arguments(arguments)),
+        }
+    }
+}
+
+pub fn format_arguments(exprs: &Vec<Expression>) -> String {
+    exprs
+        .iter()
+        .map(|x| x.to_string())
+        .collect::<Vec<String>>()
+        .join(", ")
+}
