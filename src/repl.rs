@@ -48,6 +48,8 @@ pub fn repl() -> Result<(), Error> {
             continue;
         } else if line == "salir" {
             std::process::exit(0);
+        } else if line == "pana" {
+            term.write_line(PANA_MIGUEL_ASCII)?;
         }
 
         let lexer = Lexer::new(line.as_str());
