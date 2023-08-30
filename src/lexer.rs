@@ -89,6 +89,19 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    fn read_string(&mut self, start: usize) -> String {
+        let mut end = start + 1;
+
+        while let Some((_, c)) = self.read_char() {
+            if c == '"' || c == '\0' {
+                break;
+            }
+            end += 1;
+        }
+
+        self.input[start + 1..end].to_owned()
+    }
+
     pub fn next_token(&mut self) -> Token {
         self.eat_whitespace();
 
@@ -109,6 +122,7 @@ impl<'a> Lexer<'a> {
             Some((_, ')')) => Token::RParen,
             Some((_, '{')) => Token::LBrace,
             Some((_, '}')) => Token::RBrace,
+            Some((index, '"')) => Token::String(self.read_string(index)),
             Some((index, char)) => {
                 if is_alphabetic(char) {
                     let identifier = self.read_identifier((index, char));

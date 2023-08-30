@@ -13,6 +13,7 @@ pub enum Object {
     Int(i64),
     Boolean(bool),
     Error(String),
+    String(String),
     Return(Box<Object>),
     FnExpr {
         params: FnParams,
@@ -40,6 +41,7 @@ impl Display for Object {
                 write!(f, "fn {}({}) {{...}}", name, format_arguments(params))
             }
             Object::FnExpr { params, .. } => write!(f, "fn({}) {{...}}", format_arguments(params)),
+            Object::String(string) => write!(f, "\"{}\"", string),
         }
     }
 }

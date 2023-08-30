@@ -145,6 +145,7 @@ impl Evaluator {
                 arguments,
             } => self.eval_call(function, arguments, env, root_context),
             Expression::Assignment { name, value } => self.set_var(name, *value, env, root_context),
+            Expression::StringLiteral(string) => Object::String(string),
         }
     }
 
@@ -221,6 +222,9 @@ impl Evaluator {
             (Object::Boolean(a), Object::Boolean(b)) => {
                 self.eval_infix_operation(a as i64, b as i64, operator)
             }
+            (Object::String(a), Object::String(b)) => {
+                self.eval_infix_string_operation(&a, &b, operator)
+            }
             _ => Object::Null,
         }
     }
@@ -237,6 +241,15 @@ impl Evaluator {
             Token::Gt => Object::Boolean(a > b),
             Token::LtEq => Object::Boolean(a <= b),
             Token::GtEq => Object::Boolean(a >= b),
+            _ => Object::Null,
+        }
+    }
+
+    fn eval_infix_string_operation(&self, a: &String, b: &String, op: Token) -> Object {
+        match op {
+            Token::Plus => Object::String(format!("{}{}", a, b)),
+            Token::Eq => Object::Boolean(a == b),
+            Token::NotEq => Object::Boolean(a != b),
             _ => Object::Null,
         }
     }
@@ -296,6 +309,7 @@ impl Evaluator {
     }
 
     fn eval_identifier(&mut self, ident: String, env: &RcEnvironment) -> Object {
+        
         match env.borrow().get(&ident) {
             Some(obj) => obj.clone(),
             None => Object::Error(format!("El identicador `{}` no existe.", ident)),

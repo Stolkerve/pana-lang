@@ -5,9 +5,10 @@ pub enum Token {
     Illegal(char),
     Eof,
 
-    // Identifiers + literals
+    // Identifiers, literals
     Ident(String),
     Int(i64),
+    String(String),
 
     // Operators
     Assign,
@@ -74,6 +75,7 @@ impl Display for Token {
             Token::Return => write!(f, "retornar"),
             Token::If => write!(f, "si"),
             Token::Else => write!(f, "sino"),
+            Token::String(string) => write!(f, "\"{}\"", string),
         }
     }
 }

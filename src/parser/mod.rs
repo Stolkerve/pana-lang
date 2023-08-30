@@ -145,6 +145,7 @@ impl<'a> Parser<'a> {
                 Token::Int(int) => Ok(Expression::IntLiteral(*int)),
                 Token::True => Ok(Expression::BooleanLiteral(true)),
                 Token::False => Ok(Expression::BooleanLiteral(false)),
+                Token::String(string) => Ok(Expression::StringLiteral(string.to_string())),
 
                 // Prefix
                 Token::Not => self.parse_prefix_expression(),
