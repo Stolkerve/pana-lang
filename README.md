@@ -1,7 +1,21 @@
 # Lenguaje de programacion Pana
 Este lenguaje de programacion esta inspirado en el libro *Writing a interpreter in Go*. El objetivo de este mismo es simplemente recreativo, educativo y experimental. No es un proyecto serio.
 
-## Comandos
+# Compilacion
+## Prerequisitos
+1. Instalar rust.\
+https://www.rust-lang.org/tools/install\
+```curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh```
+2. Instalar git.
+3. Tener internet.
+
+## Correr el programa
+```cargo run <comandos opcionales>```
+
+## compilar
+```cargo build```
+
+# Comandos
 #### Ejecutar un archivo .pana (futuro)
 ```pana archivo.pana```
 
@@ -13,7 +27,7 @@ En el modo interactivo tienes los comandos de: `salir`, `limpiar`, `pana`.
 
 ```pana```
 
-## Sintaxis
+# Sintaxis
 #### Variables
 ```
 var a = 20;
