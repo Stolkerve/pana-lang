@@ -31,6 +31,10 @@ pub enum Expression {
         function: Box<Expression>, // fn literal o identifier
         arguments: FnParams,
     },
+    Assignment {
+        name: String,
+        value: Box<Expression>,
+    }
 }
 
 impl Display for Expression {
@@ -53,6 +57,7 @@ impl Display for Expression {
                 function,
                 arguments,
             } => write!(f, "{}({})", function, format_arguments(arguments)),
+            Expression::Assignment { name, value } => write!(f, "{} = {};", name, *value),
         }
     }
 }

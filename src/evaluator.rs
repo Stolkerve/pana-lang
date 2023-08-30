@@ -144,6 +144,7 @@ impl Evaluator {
                 function,
                 arguments,
             } => self.eval_call(function, arguments, env, root_context),
+            Expression::Assignment { name, value } => self.set_var(name, *value, env, root_context),
         }
     }
 
@@ -252,6 +253,18 @@ impl Evaluator {
         }
 
         self.push_var(name, value, env, root_context)
+    }
+
+    fn set_var(&mut self, name: String, value: Expression, env: &RcEnvironment, root_context: &Context) -> Object {
+        if self.check_ident(&name, env).is_none() {
+            return Object::Error(format!("El no existe referencias hacia `{}`", name));
+        }
+
+        let obj = self.eval_expression(value, env, root_context);
+        let mut env_ref = RefCell::borrow_mut(env);
+    
+        env_ref.update(name, obj.clone());
+        obj
     }
 
     fn check_ident(&self, name: &String, env: &RcEnvironment) -> Option<Object> {

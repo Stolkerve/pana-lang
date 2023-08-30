@@ -57,6 +57,18 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn check_semicolon(&mut self) -> Option<ParserError > {
+        if self.peek_token_is(Token::SemiColon) {
+            None
+        } else {
+            let peek = self.peek_token();
+            if peek == &Token::Eof {
+                return Some(ParserError::MissingSemiColon);
+            }
+            return Some(ParserError::Illegal(peek.clone()));
+        }
+    }
+
     fn parse_let_statement(&mut self) -> Result<Statement, ParserError> {
         let identifier: String;
 
@@ -76,11 +88,13 @@ impl<'a> Parser<'a> {
 
         let expr = self.parse_expression(Precedence::Lowest)?;
 
-        let peek = self.peek_token();
-        if peek == &Token::SemiColon || peek == &Token::Eof {
-            self.next_token();
-        } else {
-            return Err(ParserError::Illegal(self.peek_token().clone()));
+        match self.check_semicolon() {
+            Some(err) => {
+                return Err(err);
+            },
+            None => {
+                self.next_token();
+            },
         }
 
         Ok(Statement::Var {
@@ -94,10 +108,13 @@ impl<'a> Parser<'a> {
 
         let expr = self.parse_expression(Precedence::Lowest);
 
-        if self.peek_token_is(Token::SemiColon) {
-            self.next_token();
-        } else {
-            return Err(ParserError::MissingSemiColon);
+        match self.check_semicolon() {
+            Some(err) => {
+                return Err(err);
+            },
+            None => {
+                self.next_token();
+            },
         }
 
         match expr {
@@ -110,7 +127,7 @@ impl<'a> Parser<'a> {
         let expr = self.parse_expression(Precedence::Lowest);
 
         if self.peek_token_is(Token::SemiColon) {
-            self.lexer.next();
+            self.next_token();
         }
 
         match expr {
@@ -124,7 +141,7 @@ impl<'a> Parser<'a> {
         let mut left_expr = {
             match &self.current_token {
                 // Literals values
-                Token::Ident(ident) => Ok(Expression::Identifier(ident.clone())),
+                Token::Ident(ident) => self.parse_identifier(ident.clone()),
                 Token::Int(int) => Ok(Expression::IntLiteral(*int)),
                 Token::True => Ok(Expression::BooleanLiteral(true)),
                 Token::False => Ok(Expression::BooleanLiteral(false)),
@@ -202,6 +219,30 @@ impl<'a> Parser<'a> {
 
         // Retornar prefix
         left_expr
+    }
+
+    fn parse_identifier(&mut self, ident: String) -> Result<Expression, ParserError> {
+        if !self.peek_token_is(Token::Assign) {
+            return Ok(Expression::Identifier(ident));
+        }
+
+        let name = ident;
+
+        self.next_token();
+        self.next_token();
+        
+        let expr = self.parse_expression(Precedence::Lowest)?;
+
+        match self.check_semicolon() {
+            Some(err) => {
+                return Err(err);
+            },
+            None => {
+                self.next_token();
+            },
+        }
+
+        Ok(Expression::Assignment { name, value: Box::new(expr) })
     }
 
     fn parse_prefix_expression(&mut self) -> Result<Expression, ParserError> {
@@ -419,6 +460,15 @@ impl<'a> Parser<'a> {
 
         if !self.expected_peek(Token::RParen) {
             return Err(ParserError::MissingRightParen);
+        }
+
+        match self.check_semicolon() {
+            Some(err) => {
+                return Err(err);
+            },
+            None => {
+                self.next_token();
+            },
         }
 
         Ok(args)

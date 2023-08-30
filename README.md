@@ -16,10 +16,10 @@ En el modo interactivo tienes los comandos de: `salir`, `limpiar`, `pana`.
 ## Sintaxis
 #### Variables
 ```
-var a = 20
-var b = verdad == falso
+var a = 20;
+var b = verdad == falso;
+a = b;  a copia el valor de b, no hay referencias
 ```
-Todavia no soporta la sintaxis de volver a asignar un valor
 #### Condicionales
 ```
 var a = 20;
@@ -34,12 +34,12 @@ sino {
 ```
 var sumar = fn(x, y) {
     var extra = 2;
-    x + y + extra
+    x + y + extra;
 }
 
 fn resta(x, y) {
-    x - y
+    x - y;
 }
 
-var total = sumar(1, 2) * resta(4, 5)
+var total = sumar(1, 2) * resta(4, 5);
 ```

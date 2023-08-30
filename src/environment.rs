@@ -32,7 +32,24 @@ impl Environment {
         }
     }
 
+    // Esta funcion sirve para guardar una variable o fn en el
+    // stack de environment del contexto
     pub fn set(&mut self, name: String, value: Object) -> Option<Object> {
-        self.stack.insert(name, value)
+        self.stack.insert(name.clone(), value.clone())
+    }
+
+    // Va a visitar todos los stacks hasta encontrar la variable o fn
+    // y actulizarlo
+    pub fn update(&mut self, name: String, value: Object) -> Option<Object> {
+        match self.stack.insert(name.clone(), value.clone()) {
+            Some(obj) => Some(obj.clone()),
+            None => match self.parent {
+                Some(ref env) => {
+                    let mut env = env.borrow_mut();
+                    env.update(name, value)
+                }
+                None => None,
+            },
+        }
     }
 }
