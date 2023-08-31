@@ -34,12 +34,6 @@ var a = 20;
 var b = verdad == falso;
 a = b;  a copia el valor de b, no hay referencias
 ```
-# Tipo de datos
-```
-var a = 12;
-var b = verdad;
-var c = "Hola mundo";
-```
 
 #### Condicionales
 ```
@@ -63,6 +57,30 @@ fn resta(x, y) {
 }
 
 var total = sumar(1, 2) * resta(4, 5);
+```
+# Tipo de datos
+```
+var a = 12;
+var b = verdad;
+var c = "Hola mundo";
+var d = nulo;
+```
+
+# Operaciones
+```
+nulo == 0 -> verdad
+nulo != verdad -> verdad
+"hola" == "chao" -> falso
+4 < 0 -> falso
+9 > 8 -> verdad
+1 >= 1 -> verdad 
+0 <= 1 -> verdad 
+
+1 + 2 -> 3
+2 - 4 -> -2
+4 * 4 -> 16
+2 / 2 -> 0
+"hola" + " " + "mundo" -> "hola mundo"
 ```
 
 # Funciones internas
