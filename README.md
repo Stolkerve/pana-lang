@@ -64,6 +64,7 @@ var a = 12;
 var b = verdad;
 var c = "Hola mundo";
 var d = nulo;
+var e = [1, 2 "hola", [fn(x) { x * 2}, d]];
 ```
 
 # Operaciones
@@ -81,14 +82,52 @@ nulo != verdad -> verdad
 4 * 4 -> 16
 2 / 2 -> 0
 "hola" + " " + "mundo" -> "hola mundo"
+2 == [0, 2][1]
 ```
 
 # Funciones internas
 #### Longitud
 ```
-lon("hola") -> 4
+longitud("hola") -> 4
 ```
 #### Imprimir en consola
 ```
 imprimir("hola ", "mundo") -> "hola mundo"
 ```
+
+# Futuro
+### Version 0.1
+- ✅ Varibles.
+- ✅️ tipo de datos: entero, nulo, vacio, logico, lista, diccionario y cadena (string).
+- ✅ Condicionales.
+- ✅ Funciones y funciones anonimas.
+- ✅ Funciones internas basicas (imprimir, longitud, y leer)
+- ✅ Operaciones
+- ️⬜️ Comentarios
+
+### Version 0.2
+- ⬜️ Mejora en los mensajes de error con columna y linea
+
+### Version 0.2.1
+- ⬜️ Cambiar el tipo de dato entero a numerico
+
+### Version 0.3
+- ⬜ bucle for range: para i en rango(10).
+- ⬜ bucle while: mientras i < 10.
+- ⬜ Keyword break: romper.
+
+### Version 0.4
+- ⬜ Operador de acceso de miembros: **.**
+- ⬜ Acceso a funciones miembro de los tipos de datos:
+    - ⬜ entero: cadena().
+    - ⬜ lista: agregar(), eliminar(), buscar(), cadena(), concatenar(), indice(), insertar(), separar(), invertir(), ordenar(), limpiar(), vacio().
+    - ⬜ diccionario: cadena(), eliminar(), llaves(), valores(), limpiar().
+    - ⬜ cadena: caracteres(), concatenar(), buscar(), eliminar(), es_alfa, es_numerico, inicia_con(), insertat(), invertir(), mayusculas(), minusculas(), reemplazar(), recortar(), separar(), subcadena(), vacio().
+
+### Version 0.5
+- ⬜ Soporte para la sintaxis de modulos.
+- ⬜ Modulos internos:
+    - ⬜ archivo: todo lo relacionado a manejo de ficheros.
+    - ⬜ sis: todo lo relacionado a syscalls.
+    - ⬜ mate: todo lo relacionado a matematicas.
+- ⬜ Importar codigo **Pana** externo con modulos
