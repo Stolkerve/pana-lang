@@ -13,6 +13,7 @@ use clap::{Command, Arg};
 use console::Term;
 use evaluator::Evaluator;
 use lexer::Lexer;
+use objects::Object;
 use parser::Parser;
 use repl::repl;
 
@@ -34,28 +35,35 @@ fn main() -> Result<(), Error> {
             return Ok(());
         }
 
-        let buffer = fs::read_to_string(archivo).expect(&format!("No es encotro el archivo {}", archivo));
         let mut evaluator = Evaluator::new();
-        let lexer = Lexer::new(&buffer);
-        let mut parser = Parser::new(lexer);
-        if !parser.errors.is_empty() {
-            term.write_line(&format!(
-                "{}",
-                console::style(
-                    parser
-                        .errors
-                        .iter()
-                        .map(|e| e.to_string())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
-                .red()
-            ))?;
-            return Ok(());
-        }
+        for line in fs::read_to_string(archivo).expect(&format!("No es encotro el archivo {}", archivo)).lines() {
+            let lexer = Lexer::new(&line);
+            let mut parser = Parser::new(lexer);
 
-        let program = parser.parse_program();
-        evaluator.eval_program(program);
+            if !parser.errors.is_empty() {
+                term.write_line(&format!(
+                    "{}",
+                    console::style(
+                        parser
+                            .errors
+                            .iter()
+                            .map(|e| e.to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    )
+                    .red()
+                ))?;
+                return Ok(());
+            }
+            let program = parser.parse_program();
+            match evaluator.eval_program(program) {
+                Object::Error(msg) => {
+                    println!("{}", msg);
+                    return Ok(());
+                },
+                _ => {}
+            }
+        }
         return Ok(());
     }
 
