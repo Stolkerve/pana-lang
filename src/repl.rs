@@ -1,4 +1,4 @@
-use crate::{evaluator::Evaluator, lexer::Lexer, parser::Parser, PANA_MIGUEL_ASCII, objects::Object};
+use crate::{evaluator::Evaluator, lexer::Lexer, parser::Parser, PANA_MIGUEL_ASCII, objects::Object, promp_theme::Tema};
 use std::{collections::VecDeque, io::Error};
 
 pub fn repl(term: console::Term) -> Result<(), Error> {
@@ -14,9 +14,10 @@ pub fn repl(term: console::Term) -> Result<(), Error> {
     let mut history = History::new();
     let mut evaluator = Evaluator::new();
 
+    let theme = Tema {};
     loop {
-        let line: String = dialoguer::Input::new()
-            .with_prompt(">>")
+        let line: String = dialoguer::Input::with_theme(&theme)
+            .with_prompt(">> ")
             .allow_empty(true)
             .history_with(&mut history)
             .interact_text_on(&term)

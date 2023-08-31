@@ -7,6 +7,7 @@ mod objects;
 mod parser;
 mod repl;
 mod token;
+mod promp_theme;
 
 use std::{fs, io::Error};
 use clap::{Command, Arg};
