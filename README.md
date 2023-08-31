@@ -76,13 +76,19 @@ nulo != verdad -> verdad
 9 > 8 -> verdad
 1 >= 1 -> verdad 
 0 <= 1 -> verdad 
+[1, 2, [3, 4]] != [1, 2] -> verdad
+[1, 2, 3] > [1, 2] -> verdad
 
 1 + 2 -> 3
 2 - 4 -> -2
 4 * 4 -> 16
 2 / 2 -> 0
 "hola" + " " + "mundo" -> "hola mundo"
+[1, 2] + [3, 4] -> [1, 2, 3, 4]
 2 == [0, 2][1]
+"hola" * 2 -> "holahola"
+[1, 2, [3, 4]] * 2 -> [1, 2, [3, 4], 1, 2, [3, 4]]
+
 ```
 
 # Funciones internas
