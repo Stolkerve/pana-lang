@@ -245,9 +245,24 @@ impl Evaluator {
             (Object::String(a), Object::String(b)) => {
                 self.eval_infix_string_operation(&a, &b, operator)
             }
+            (Object::String(a), Object::Int(b)) => {
+                self.eval_infix_string_int_operation(&a, b, operator)
+            }
+            (Object::Int(a), Object::String(b)) => {
+                self.eval_infix_string_int_operation(&b, a, operator)
+            }
+            (Object::Array(a), Object::Array(b)) => {
+                self.eval_infix_array_operation(&a, &b, operator)
+            },
+            (Object::Int(a), Object::Array(b)) => {
+                self.eval_infix_array_int_operation(&b, a, operator)
+            },
+            (Object::Array(a), Object::Int(b)) => {
+                self.eval_infix_array_int_operation(&a, b, operator)
+            },
             ( Object::Error(msg), _) => Object::Error(msg),
             (_, Object::Error(msg)) => Object::Error(msg),
-            _ => Object::Null,
+            (a, b) => Object::Error(format!("No se soporta operaciones {} {} {}", a.get_type(), operator, b.get_type())),
         }
     }
 
@@ -272,6 +287,47 @@ impl Evaluator {
             Token::Plus => Object::String(format!("{}{}", a, b)),
             Token::Eq => Object::Boolean(a == b),
             Token::NotEq => Object::Boolean(a != b),
+            _ => Object::Null,
+        }
+    }
+
+    fn eval_infix_string_int_operation(&self, a: &String, b: i64, op: Token) -> Object {
+        match op {
+            Token::Mul => {
+                let mut string = String::new();
+                string.reserve(b as usize);
+                for _ in 0..b {
+                   string.push_str(a);
+                }
+                Object::String(string)
+            },
+            _ => Object::Null,
+        }
+    }
+
+    fn eval_infix_array_operation(&self, a: &Vec<Object>, b: &Vec<Object>, op: Token) -> Object {
+        match op {
+            Token::Plus => Object::Array([a.as_slice(), b.as_slice()].concat()),
+            Token::Eq => Object::Boolean(a == b),
+            Token::NotEq => Object::Boolean(a != b),
+            Token::Lt => Object::Boolean(a.len() < b.len()),
+            Token::Gt => Object::Boolean(a.len() > b.len()),
+            Token::LtEq => Object::Boolean(a.len() <= b.len()),
+            Token::GtEq => Object::Boolean(a.len() >= b.len()),
+            _ => Object::Null,
+        }
+    }
+
+    fn eval_infix_array_int_operation(&self, a: &Vec<Object>, b: i64, op: Token) -> Object {
+        match op {
+            Token::Mul => {
+                let mut objs = Vec::new();
+                objs.reserve(b as usize);
+                for _ in 0..b {
+                   objs.extend(a.to_owned());
+                }
+                Object::Array(objs)
+            },
             _ => Object::Null,
         }
     }

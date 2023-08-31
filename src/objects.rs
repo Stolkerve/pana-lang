@@ -36,6 +36,23 @@ pub enum Object {
     Null,
 }
 
+impl PartialEq for Object {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Int(l0), Self::Int(r0)) => l0 == r0,
+            (Self::Boolean(l0), Self::Boolean(r0)) => l0 == r0,
+            (Self::Error(l0), Self::Error(r0)) => l0 == r0,
+            (Self::String(l0), Self::String(r0)) => l0 == r0,
+            (Self::Return(l0), Self::Return(r0)) => l0 == r0,
+            (Self::Array(l0), Self::Array(r0)) => l0 == r0,
+            (Self::FnExpr { params: l_params, body: l_body, env: l_env }, Self::FnExpr { params: r_params, body: r_body, env: r_env }) => false,
+            (Self::Fn { name: l_name, params: l_params, body: l_body, env: l_env }, Self::Fn { name: r_name, params: r_params, body: r_body, env: r_env }) => l_name == r_name,
+            (Self::BuildinFn { name: l_name, func: l_func }, Self::BuildinFn { name: r_name, func: r_func }) => l_name == r_name,
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
+}
+
 impl Object {
     pub fn get_type(&self) -> &str {
         match self {
