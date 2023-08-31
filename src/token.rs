@@ -23,15 +23,17 @@ pub enum Token {
     Gt,
     LtEq,
     GtEq,
+    Dot,
 
     // Delimiters
     Comma,
     SemiColon,
-
     LParen,
     RParen,
     LBrace,
     RBrace,
+    LBracket,
+    RBracket,
 
     // Keywords
     Func,
@@ -76,6 +78,9 @@ impl Display for Token {
             Token::If => write!(f, "si"),
             Token::Else => write!(f, "sino"),
             Token::String(string) => write!(f, "\"{}\"", string),
+            Token::Dot => write!(f, "."),
+            Token::LBracket => write!(f, "["),
+            Token::RBracket => write!(f, "]"),
         }
     }
 }

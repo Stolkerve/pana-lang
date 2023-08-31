@@ -122,6 +122,9 @@ impl<'a> Lexer<'a> {
             Some((_, ')')) => Token::RParen,
             Some((_, '{')) => Token::LBrace,
             Some((_, '}')) => Token::RBrace,
+            Some((_, '[')) => Token::LBracket,
+            Some((_, ']')) => Token::RBracket,
+            Some((_, '.')) => Token::Dot,
             Some((index, '"')) => Token::String(self.read_string(index)),
             Some((index, char)) => {
                 if is_alphabetic(char) {

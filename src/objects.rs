@@ -16,6 +16,7 @@ pub enum Object {
     Error(String),
     String(String),
     Return(Box<Object>),
+    Array(Vec<Object>),
     FnExpr {
         params: FnParams,
         body: BlockStatement,
@@ -48,6 +49,7 @@ impl Object {
             Object::BuildinFn { .. } => "funcion",
             Object::Null => "nulo",
             Object::Void => "vacio",
+            Object::Array(_) => "lista",
         }
     }
 }
@@ -67,6 +69,7 @@ impl Display for Object {
             Object::BuildinFn { name, .. } => write!(f, "fn {}(...) {{...}}", name),
             Object::String(string) => write!(f, "{}", string),
             Object::Void => write!(f, ""),
+            Object::Array(objs) => write!(f, "[{}]", objs.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(", ")),
         }
     }
 }

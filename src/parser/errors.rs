@@ -13,6 +13,7 @@ pub enum ParserError {
     MissingLeftParen,
     MissingRightParen,
     MissingRightBrace,
+    MissingRightBracket,
 }
 
 impl Display for ParserError {
@@ -27,6 +28,7 @@ impl Display for ParserError {
             ParserError::MissingRightBrace => write!(f, "Fata el `}}`"),
             ParserError::MissingLeftParen => write!(f, "Falta el `(`"),
             ParserError::MissingRightParen => write!(f, "Falta el )"),
+            ParserError::MissingRightBracket => write!(f, "Falta el ]"),
         }
     }
 }

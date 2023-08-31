@@ -10,6 +10,8 @@ pub enum Precedence {
     ProductDiv = 4,  // * y /
     Prefix = 5,      //-1
     Call = 6,        // foo()
+    Index = 7,        // foo()
+    Member = 8,        // foo()
 }
 
 pub fn to_tokens_precedence(token: &Token) -> Precedence {
@@ -25,6 +27,8 @@ pub fn to_tokens_precedence(token: &Token) -> Precedence {
         Token::LtEq => Precedence::LessGreater,
         Token::GtEq => Precedence::LessGreater,
         Token::LParen => Precedence::Call,
+        Token::LBracket => Precedence::Index,
+        Token::Dot => Precedence::Member,
         _ => Precedence::Lowest,
     }
 }

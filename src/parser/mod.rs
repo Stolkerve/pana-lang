@@ -58,7 +58,7 @@ impl<'a> Parser<'a> {
     }
 
     fn check_semicolon(&mut self) -> Option<ParserError> {
-        if self.peek_token_is(Token::SemiColon) {
+        if self.peek_token_is(&Token::SemiColon) {
             None
         } else {
             let peek = self.peek_token();
@@ -80,7 +80,7 @@ impl<'a> Parser<'a> {
 
         self.next_token();
 
-        if !self.expected_peek(Token::Assign) {
+        if !self.expected_peek(&Token::Assign) {
             return Err(ParserError::MissingAssign);
         }
 
@@ -126,7 +126,7 @@ impl<'a> Parser<'a> {
     fn parse_expression_statement(&mut self) -> Result<Statement, ParserError> {
         let expr = self.parse_expression(Precedence::Lowest);
 
-        if self.peek_token_is(Token::SemiColon) {
+        if self.peek_token_is(&Token::SemiColon) {
             self.next_token();
         }
 
@@ -152,6 +152,7 @@ impl<'a> Parser<'a> {
                 Token::Plus => self.parse_prefix_expression(),
                 Token::Sub => self.parse_prefix_expression(),
                 Token::LParen => self.parse_grouped_expression(),
+                Token::LBracket => self.parse_array_literal(),
 
                 // Contitions
                 Token::If => self.parse_if_expression(),
@@ -162,7 +163,7 @@ impl<'a> Parser<'a> {
 
         // Operaciones infix
         if left_expr.is_ok() {
-            while !self.peek_token_is(Token::SemiColon)
+            while !self.peek_token_is(&Token::SemiColon)
                 && (precedence as u32) < (self.peek_precedence() as u32)
             {
                 match self.peek_token() {
@@ -210,6 +211,10 @@ impl<'a> Parser<'a> {
                         self.next_token();
                         left_expr = self.parse_call_expression(left_expr.unwrap());
                     }
+                    Token::LBracket => {
+                        self.next_token();
+                        left_expr = self.parse_index_expression(left_expr.unwrap());
+                    }
                     token => {
                         return Err(ParserError::Illegal(token.clone()));
                     }
@@ -223,7 +228,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_identifier(&mut self, ident: String) -> Result<Expression, ParserError> {
-        if !self.peek_token_is(Token::Assign) {
+        if !self.peek_token_is(&Token::Assign) {
             return Ok(Expression::Identifier(ident));
         }
 
@@ -283,7 +288,7 @@ impl<'a> Parser<'a> {
         self.next_token();
 
         let expr = self.parse_expression(Precedence::Lowest);
-        if !self.expected_peek(Token::RParen) {
+        if !self.expected_peek(&Token::RParen) {
             return Err(ParserError::MissingRightParen);
         }
         expr
@@ -294,17 +299,17 @@ impl<'a> Parser<'a> {
 
         let conditional_expr = self.parse_expression(Precedence::Lowest)?;
 
-        if !self.expected_peek(Token::LBrace) {
+        if !self.expected_peek(&Token::LBrace) {
             return Err(ParserError::MissingLeftBrace);
         }
 
         let consequence_stmts = self.parse_block_statement()?;
 
         let mut alternative_stmts = BlockStatement::default();
-        if self.peek_token_is(Token::Else) {
+        if self.peek_token_is(&Token::Else) {
             self.next_token();
 
-            if !self.expected_peek(Token::LBrace) {
+            if !self.expected_peek(&Token::LBrace) {
                 return Err(ParserError::MissingLeftBrace);
             }
 
@@ -356,9 +361,9 @@ impl<'a> Parser<'a> {
         self.lexer.peek().unwrap_or(&Token::Eof)
     }
 
-    fn expected_peek(&mut self, token_type: Token) -> bool {
+    fn expected_peek(&mut self, token_type: &Token) -> bool {
         if let Some(token) = self.lexer.peek() {
-            if &token_type == token {
+            if token_type == token {
                 self.next_token();
                 return true;
             } else {
@@ -372,9 +377,9 @@ impl<'a> Parser<'a> {
         self.current_token == token
     }
 
-    fn peek_token_is(&mut self, token: Token) -> bool {
+    fn peek_token_is(&mut self, token: &Token) -> bool {
         if let Some(tok) = self.lexer.peek() {
-            return tok == &token;
+            return tok == token;
         }
         false
     }
@@ -388,13 +393,13 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_fn_literal(&mut self) -> Result<Expression, ParserError> {
-        if !self.expected_peek(Token::LParen) {
+        if !self.expected_peek(&Token::LParen) {
             return Err(ParserError::MissingLeftParen);
         }
 
         let params = self.parse_fn_params()?;
 
-        if !self.expected_peek(Token::LBrace) {
+        if !self.expected_peek(&Token::LBrace) {
             return Err(ParserError::MissingLeftBrace);
         }
 
@@ -403,10 +408,48 @@ impl<'a> Parser<'a> {
         Ok(Expression::FnLiteral { body, params })
     }
 
+    fn parse_call_expression(&mut self, function: Expression) -> Result<Expression, ParserError> {
+        let arguments = self.parse_expression_list(&Token::RParen, ParserError::MissingRightParen)?;
+
+        if *self.peek_token() == Token::Eof {
+            self.next_token();
+            return Err(ParserError::MissingSemiColon);
+        }
+
+        Ok(Expression::Call {
+            function: Box::new(function),
+            arguments,
+        })
+    }
+
+    fn parse_expression_list(&mut self, end: &Token, err: ParserError) -> Result<Vec<Expression>, ParserError> {
+        let mut args = FnParams::default();
+
+        if self.peek_token_is(end) {
+            self.next_token();
+            return Ok(args);
+        }
+
+        self.next_token();
+        args.push(self.parse_expression(Precedence::Lowest)?);
+
+        while self.peek_token_is(&Token::Comma) {
+            self.next_token();
+            self.next_token();
+            args.push(self.parse_expression(Precedence::Lowest)?);
+        }
+
+        if !self.expected_peek(end) {
+            return Err(err);
+        }
+
+        Ok(args)
+    }
+
     fn parse_fn_params(&mut self) -> Result<FnParams, ParserError> {
         let mut params = FnParams::default();
 
-        if self.peek_token_is(Token::RParen) {
+        if self.peek_token_is(&Token::RParen) {
             self.next_token();
             return Ok(params);
         }
@@ -415,7 +458,7 @@ impl<'a> Parser<'a> {
 
         if let Token::Ident(ident) = self.current_token.clone() {
             params.push(Expression::Identifier(ident));
-            while self.peek_token_is(Token::Comma) {
+            while self.peek_token_is(&Token::Comma) {
                 self.next_token();
                 self.next_token();
 
@@ -429,50 +472,13 @@ impl<'a> Parser<'a> {
             return Err(ParserError::Illegal(self.current_token.clone()));
         }
 
-        if !self.expected_peek(Token::RParen) {
+        if !self.expected_peek(&Token::RParen) {
             return Err(ParserError::MissingRightParen);
         }
 
         Ok(params)
     }
 
-    fn parse_call_expression(&mut self, function: Expression) -> Result<Expression, ParserError> {
-        let arguments = self.parse_call_arguments()?;
-
-        Ok(Expression::Call {
-            function: Box::new(function),
-            arguments,
-        })
-    }
-
-    fn parse_call_arguments(&mut self) -> Result<FnParams, ParserError> {
-        let mut args = FnParams::default();
-
-        if self.peek_token_is(Token::RParen) {
-            self.next_token();
-            return Ok(args);
-        }
-
-        self.next_token();
-        args.push(self.parse_expression(Precedence::Lowest)?);
-
-        while self.peek_token_is(Token::Comma) {
-            self.next_token();
-            self.next_token();
-            args.push(self.parse_expression(Precedence::Lowest)?);
-        }
-
-        if !self.expected_peek(Token::RParen) {
-            return Err(ParserError::MissingRightParen);
-        }
-
-        if *self.peek_token() == Token::Eof {
-            self.next_token();
-            return Err(ParserError::MissingSemiColon);
-        }
-
-        Ok(args)
-    }
 
     fn parse_fn_statement(&mut self) -> Result<Statement, ParserError> {
         let identifier: String;
@@ -484,13 +490,13 @@ impl<'a> Parser<'a> {
         }
         self.next_token();
 
-        if !self.expected_peek(Token::LParen) {
+        if !self.expected_peek(&Token::LParen) {
             return Err(ParserError::MissingLeftParen);
         }
 
         let params = self.parse_fn_params()?;
 
-        if !self.expected_peek(Token::LBrace) {
+        if !self.expected_peek(&Token::LBrace) {
             return Err(ParserError::MissingLeftBrace);
         }
 
@@ -501,5 +507,21 @@ impl<'a> Parser<'a> {
             params,
             body,
         })
+    }
+
+    fn parse_array_literal(&mut self) -> Result<Expression, ParserError> {
+        let elements = self.parse_expression_list(&Token::RBracket, ParserError::MissingRightBracket)?;
+        Ok(Expression::ArrayLiteral { elements })
+    }
+
+    fn parse_index_expression(&mut self, left: Expression) -> Result<Expression, ParserError> {
+        self.next_token();
+        let index = self.parse_expression(Precedence::Lowest)?;
+
+        if !self.expected_peek(&Token::RBracket) {
+            return Err(ParserError::MissingRightBracket);
+        }
+
+        Ok(Expression::Index { left: Box::new(left), index: Box::new(index) })
     }
 }

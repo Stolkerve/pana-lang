@@ -6,7 +6,7 @@ use crate::{
         statements::{BlockStatement, Statement},
         Program,
     },
-    buildins::{buildin_imprimir_fn, buildin_lon_fn, BuildinFnPointer},
+    buildins::{buildin_imprimir_fn, buildin_longitud_fn, BuildinFnPointer},
     environment::{Environment, RcEnvironment},
     objects::Object,
     token::Token,
@@ -36,8 +36,8 @@ impl Evaluator {
             environment: Rc::new(RefCell::new(Environment::new(None))),
             buildins_fn: HashMap::from([
                 (
-                    "lon".to_owned(),
-                    Box::new(buildin_lon_fn) as Box<dyn BuildinFnPointer>,
+                    "longitud".to_owned(),
+                    Box::new(buildin_longitud_fn) as Box<dyn BuildinFnPointer>,
                 ),
                 (
                     "imprimir".to_owned(),
@@ -164,6 +164,8 @@ impl Evaluator {
             } => self.eval_call(*function, arguments, env, root_context),
             Expression::Assignment { name, value } => self.set_var(name, *value, env, root_context),
             Expression::StringLiteral(string) => Object::String(string),
+            Expression::ArrayLiteral { elements } => self.eval_array_literal(elements, env, root_context),
+            Expression::Index { left, index } => self.eval_index_expression(*left, *index, env, root_context),
         }
     }
 
@@ -406,5 +408,36 @@ impl Evaluator {
             }
         }
         self.eval_block_statement(body, &scope_env, root_context)
+    }
+
+    fn eval_array_literal(&mut self, elements: Vec<Expression>, env: &Rc<RefCell<Environment>>, root_context: &Context) -> Object {
+        let mut objs = Vec::new();
+        for expr in elements {
+           let obj = self.eval_expression(expr, env, root_context);
+           match obj {
+                Object::Error(_) => return obj,
+                _ => objs.push(obj)
+            }
+        }
+        Object::Array(objs)
+    }
+
+    fn eval_index_expression(&mut self, left: Expression, index: Expression, env: &Rc<RefCell<Environment>>, root_context: &Context) -> Object {
+        let left_obj = self.eval_expression(left, env, root_context);
+        match left_obj {
+            Object::Error(_) => left_obj,
+            Object::Array(objs) => {
+                if let Expression::IntLiteral(index) = index {
+                    return match objs.get(index as usize) {
+                        Some(obj) => obj.clone(),
+                        None => Object::Null,
+                    };
+                }
+                Object::Error("El operador de indexar solo opera con enteros".to_owned())
+            },
+            _ => {
+                Object::Error("Solo se puede usar el operador de indexar en listas".to_owned())
+            }
+        }
     }
 }

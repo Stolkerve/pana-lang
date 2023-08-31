@@ -31,9 +31,8 @@ impl<'a> Clone for Box<dyn 'a + BuildinFnPointer> {
     }
 }
 
-// lon de longitud
 // Funcion que retorna la longitud de un string o array
-pub fn buildin_lon_fn(
+pub fn buildin_longitud_fn(
     eval: &mut Evaluator,
     args: FnParams,
     env: &RcEnvironment,
@@ -45,6 +44,7 @@ pub fn buildin_lon_fn(
     let arg_obj = eval.eval_expression(args.get(0).unwrap().clone(), env, root_context);
     match arg_obj {
         Object::String(string) => Object::Int(string.len() as i64),
+        Object::Array(objs) => Object::Int(objs.len() as i64),
         obj => Object::Error(format!(
             "Se espera un tipo de dato cadena, no {}",
             obj.get_type()

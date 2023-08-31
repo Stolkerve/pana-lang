@@ -14,6 +14,13 @@ pub enum Expression {
         params: FnParams,
         body: BlockStatement,
     },
+    ArrayLiteral {
+        elements: Vec<Expression>
+    },
+    Index {
+        left: Box<Expression>,
+        index: Box<Expression>
+    },
     Prefix {
         operator: Token,
         right: Box<Expression>,
@@ -60,6 +67,8 @@ impl Display for Expression {
             } => write!(f, "{}({})", function, format_arguments(arguments)),
             Expression::Assignment { name, value } => write!(f, "{} = {};", name, *value),
             Expression::StringLiteral(string) => write!(f, "\"{}\"", string),
+            Expression::ArrayLiteral { elements } => write!(f, "[{}]", format_arguments(elements)),
+            Expression::Index { left, index } => write!(f, "{}[{}]", *left, *index),
         }
     }
 }
