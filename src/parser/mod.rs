@@ -410,7 +410,8 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_call_expression(&mut self, function: Expression) -> Result<Expression, ParserError> {
-        let arguments = self.parse_expression_list(&Token::RParen, ParserError::MissingRightParen)?;
+        let arguments =
+            self.parse_expression_list(&Token::RParen, ParserError::MissingRightParen)?;
 
         if *self.peek_token() == Token::Eof {
             self.next_token();
@@ -423,7 +424,11 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn parse_expression_list(&mut self, end: &Token, err: ParserError) -> Result<Vec<Expression>, ParserError> {
+    fn parse_expression_list(
+        &mut self,
+        end: &Token,
+        err: ParserError,
+    ) -> Result<Vec<Expression>, ParserError> {
         let mut args = FnParams::default();
 
         if self.peek_token_is(end) {
@@ -480,7 +485,6 @@ impl<'a> Parser<'a> {
         Ok(params)
     }
 
-
     fn parse_fn_statement(&mut self) -> Result<Statement, ParserError> {
         let identifier: String;
 
@@ -511,7 +515,8 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_array_literal(&mut self) -> Result<Expression, ParserError> {
-        let elements = self.parse_expression_list(&Token::RBracket, ParserError::MissingRightBracket)?;
+        let elements =
+            self.parse_expression_list(&Token::RBracket, ParserError::MissingRightBracket)?;
         Ok(Expression::ArrayLiteral { elements })
     }
 
@@ -523,6 +528,9 @@ impl<'a> Parser<'a> {
             return Err(ParserError::MissingRightBracket);
         }
 
-        Ok(Expression::Index { left: Box::new(left), index: Box::new(index) })
+        Ok(Expression::Index {
+            left: Box::new(left),
+            index: Box::new(index),
+        })
     }
 }

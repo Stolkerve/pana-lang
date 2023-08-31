@@ -16,11 +16,11 @@ pub enum Expression {
         body: BlockStatement,
     },
     ArrayLiteral {
-        elements: Vec<Expression>
+        elements: Vec<Expression>,
     },
     Index {
         left: Box<Expression>,
-        index: Box<Expression>
+        index: Box<Expression>,
     },
     Prefix {
         operator: Token,

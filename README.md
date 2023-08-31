@@ -97,10 +97,19 @@ verdad - 1 -> 0
 #### Longitud
 ```
 longitud("hola") -> 4
+longitud([1, 2, 3]) -> 3
+```
+#### Tipo de dato
+```
+tipo("hola") -> "cadena"
 ```
 #### Imprimir en consola
 ```
 imprimir("hola ", "mundo") -> "hola mundo"
+```
+#### Leer consola
+```
+leer("Ingrese su nombre: ") -> "Sebastian"
 ```
 
 # Futuro

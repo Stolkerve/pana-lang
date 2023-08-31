@@ -6,7 +6,10 @@ use crate::{
         statements::{BlockStatement, Statement},
         Program,
     },
-    buildins::{buildin_imprimir_fn, buildin_longitud_fn, BuildinFnPointer, buildin_tipo_fn},
+    buildins::{
+        buildin_imprimir_fn, buildin_leer_fn, buildin_longitud_fn, buildin_tipo_fn,
+        BuildinFnPointer,
+    },
     environment::{Environment, RcEnvironment},
     objects::Object,
     token::Token,
@@ -40,12 +43,16 @@ impl Evaluator {
                     Box::new(buildin_longitud_fn) as Box<dyn BuildinFnPointer>,
                 ),
                 (
+                    "tipo".to_owned(),
+                    Box::new(buildin_tipo_fn) as Box<dyn BuildinFnPointer>,
+                ),
+                (
                     "imprimir".to_owned(),
                     Box::new(buildin_imprimir_fn) as Box<dyn BuildinFnPointer>,
                 ),
                 (
-                    "tipo".to_owned(),
-                    Box::new(buildin_tipo_fn) as Box<dyn BuildinFnPointer>,
+                    "leer".to_owned(),
+                    Box::new(buildin_leer_fn) as Box<dyn BuildinFnPointer>,
                 ),
             ]),
         }
@@ -168,8 +175,12 @@ impl Evaluator {
             } => self.eval_call(*function, arguments, env, root_context),
             Expression::Assignment { name, value } => self.set_var(name, *value, env, root_context),
             Expression::StringLiteral(string) => Object::String(string),
-            Expression::ArrayLiteral { elements } => self.eval_array_literal(elements, env, root_context),
-            Expression::Index { left, index } => self.eval_index_expression(*left, *index, env, root_context),
+            Expression::ArrayLiteral { elements } => {
+                self.eval_array_literal(elements, env, root_context)
+            }
+            Expression::Index { left, index } => {
+                self.eval_index_expression(*left, *index, env, root_context)
+            }
             Expression::NullLiteral => Object::Null,
         }
     }
@@ -258,21 +269,24 @@ impl Evaluator {
             }
             (Object::Array(a), Object::Array(b)) => {
                 self.eval_infix_array_operation(&a, &b, operator)
-            },
+            }
             (Object::Int(a), Object::Array(b)) => {
                 self.eval_infix_array_int_operation(&b, a, operator)
-            },
+            }
             (Object::Array(a), Object::Int(b)) => {
                 self.eval_infix_array_int_operation(&a, b, operator)
-            },
-            (Object::Null, Object::Null) => {
-                self.eval_infix_null_operation(operator)
             }
+            (Object::Null, Object::Null) => self.eval_infix_null_operation(operator),
             (Object::Null, _) => self.eval_infix_null_object_operation(operator),
             (_, Object::Null) => self.eval_infix_null_object_operation(operator),
-            ( Object::Error(msg), _) => Object::Error(msg),
+            (Object::Error(msg), _) => Object::Error(msg),
             (_, Object::Error(msg)) => Object::Error(msg),
-            (a, b) => Object::Error(format!("No se soporta operaciones {} {} {}", a.get_type(), operator, b.get_type())),
+            (a, b) => Object::Error(format!(
+                "No se soporta operaciones {} {} {}",
+                a.get_type(),
+                operator,
+                b.get_type()
+            )),
         }
     }
 
@@ -307,10 +321,10 @@ impl Evaluator {
                 let mut string = String::new();
                 string.reserve(b as usize);
                 for _ in 0..b {
-                   string.push_str(a);
+                    string.push_str(a);
                 }
                 Object::String(string)
-            },
+            }
             _ => Object::Null,
         }
     }
@@ -334,10 +348,10 @@ impl Evaluator {
                 let mut objs = Vec::new();
                 objs.reserve(b as usize);
                 for _ in 0..b {
-                   objs.extend(a.to_owned());
+                    objs.extend(a.to_owned());
                 }
                 Object::Array(objs)
-            },
+            }
             _ => Object::Null,
         }
     }
@@ -346,7 +360,7 @@ impl Evaluator {
         match operator {
             Token::Eq => Object::Boolean(true),
             Token::NotEq => Object::Boolean(false),
-            _ => Object::Error("XD".to_owned())
+            _ => Object::Error("XD".to_owned()),
         }
     }
 
@@ -354,7 +368,7 @@ impl Evaluator {
         match operator {
             Token::Eq => Object::Boolean(false),
             Token::NotEq => Object::Boolean(true),
-            _ => Object::Error("XD".to_owned())
+            _ => Object::Error("XD".to_owned()),
         }
     }
 
@@ -412,10 +426,12 @@ impl Evaluator {
         match obj {
             Object::Error(msg) => {
                 return Object::Error(msg);
-            },
+            }
             Object::Void => {
-                return Object::Error("No se puede asignar el tipo de dato vacio a una variable".to_owned());
-            },
+                return Object::Error(
+                    "No se puede asignar el tipo de dato vacio a una variable".to_owned(),
+                );
+            }
             _ => {}
         }
         self.push_obj(name, obj, env)
@@ -492,19 +508,30 @@ impl Evaluator {
         self.eval_block_statement(body, &scope_env, root_context)
     }
 
-    fn eval_array_literal(&mut self, elements: Vec<Expression>, env: &Rc<RefCell<Environment>>, root_context: &Context) -> Object {
+    fn eval_array_literal(
+        &mut self,
+        elements: Vec<Expression>,
+        env: &Rc<RefCell<Environment>>,
+        root_context: &Context,
+    ) -> Object {
         let mut objs = Vec::new();
         for expr in elements {
-           let obj = self.eval_expression(expr, env, root_context);
-           match obj {
+            let obj = self.eval_expression(expr, env, root_context);
+            match obj {
                 Object::Error(_) => return obj,
-                _ => objs.push(obj)
+                _ => objs.push(obj),
             }
         }
         Object::Array(objs)
     }
 
-    fn eval_index_expression(&mut self, left: Expression, index: Expression, env: &Rc<RefCell<Environment>>, root_context: &Context) -> Object {
+    fn eval_index_expression(
+        &mut self,
+        left: Expression,
+        index: Expression,
+        env: &Rc<RefCell<Environment>>,
+        root_context: &Context,
+    ) -> Object {
         let left_obj = self.eval_expression(left, env, root_context);
         match left_obj {
             Object::Error(_) => left_obj,
@@ -516,10 +543,8 @@ impl Evaluator {
                     };
                 }
                 Object::Error("El operador de indexar solo opera con enteros".to_owned())
-            },
-            _ => {
-                Object::Error("Solo se puede usar el operador de indexar en listas".to_owned())
             }
+            _ => Object::Error("Solo se puede usar el operador de indexar en listas".to_owned()),
         }
     }
 }

@@ -70,7 +70,11 @@ impl dialoguer::theme::Theme for Tema {
         write!(f, "{}{}", prompt, sel)
     }
 
-    fn format_password_prompt(&self, f: &mut dyn std::fmt::Write, prompt: &str) -> std::fmt::Result {
+    fn format_password_prompt(
+        &self,
+        f: &mut dyn std::fmt::Write,
+        prompt: &str,
+    ) -> std::fmt::Result {
         self.format_input_prompt(f, prompt, None)
     }
 
@@ -95,7 +99,11 @@ impl dialoguer::theme::Theme for Tema {
         self.format_input_prompt_selection(f, prompt, sel)
     }
 
-    fn format_multi_select_prompt(&self, f: &mut dyn std::fmt::Write, prompt: &str) -> std::fmt::Result {
+    fn format_multi_select_prompt(
+        &self,
+        f: &mut dyn std::fmt::Write,
+        prompt: &str,
+    ) -> std::fmt::Result {
         self.format_prompt(f, prompt)
     }
 

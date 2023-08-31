@@ -3,6 +3,7 @@ use crate::{
     environment::RcEnvironment,
     evaluator::{Context, Evaluator},
     objects::Object,
+    promp_theme::Tema,
 };
 
 pub trait BuildinFnPointer:
@@ -60,8 +61,15 @@ pub fn buildin_imprimir_fn(
     root_context: &Context,
 ) -> Object {
     if !args.is_empty() {
-        let objs = args.iter().map(|arg| eval.eval_expression(arg.clone(), env, root_context)).collect::<Vec<_>>();
-        let string = objs.iter().map(|obj| obj.to_string()).collect::<Vec<_>>().join("");
+        let objs = args
+            .iter()
+            .map(|arg| eval.eval_expression(arg.clone(), env, root_context))
+            .collect::<Vec<_>>();
+        let string = objs
+            .iter()
+            .map(|obj| obj.to_string())
+            .collect::<Vec<_>>()
+            .join("");
         println!("{}", string);
         return Object::Void;
     }
@@ -81,4 +89,40 @@ pub fn buildin_tipo_fn(
     }
     let arg_obj = eval.eval_expression(args.get(0).unwrap().clone(), env, root_context);
     Object::String(arg_obj.get_type().to_owned())
+}
+
+// Funcion que permite un input desde el terminal
+pub fn buildin_leer_fn(
+    eval: &mut Evaluator,
+    args: FnParams,
+    env: &RcEnvironment,
+    root_context: &Context,
+) -> Object {
+    match args.len() {
+        0 => {
+            let output: String = dialoguer::Input::with_theme(&Tema {})
+                .allow_empty(true)
+                .interact_text()
+                .unwrap();
+            return Object::String(output);
+        }
+        1 => {
+            let arg_obj = eval.eval_expression(args.get(0).unwrap().clone(), env, root_context);
+            if let Object::String(promp) = arg_obj {
+                let output: String = dialoguer::Input::with_theme(&Tema {})
+                    .with_prompt(promp)
+                    .allow_empty(true)
+                    .interact_text()
+                    .unwrap();
+                return Object::String(output);
+            }
+            Object::Error(format!(
+                "Se espera un tipo de dato cadena, no {}",
+                arg_obj.get_type()
+            ))
+        }
+        _ => {
+            return Object::Error(format!("Se encontro {} argumentos de 1", args.len()));
+        }
+    }
 }

@@ -10,8 +10,8 @@ pub enum Precedence {
     ProductDiv = 4,  // * y /
     Prefix = 5,      //-1
     Call = 6,        // foo()
-    Index = 7,        // foo()
-    Member = 8,        // foo()
+    Index = 7,       // foo()
+    Member = 8,      // foo()
 }
 
 pub fn to_tokens_precedence(token: &Token) -> Precedence {

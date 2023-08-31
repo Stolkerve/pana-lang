@@ -43,7 +43,7 @@ pub enum Token {
     Else,
     True,
     False,
-    Null
+    Null,
 }
 
 impl Display for Token {

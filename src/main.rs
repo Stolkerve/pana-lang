@@ -5,18 +5,18 @@ mod evaluator;
 mod lexer;
 mod objects;
 mod parser;
+mod promp_theme;
 mod repl;
 mod token;
-mod promp_theme;
 
-use std::{fs, io::Error};
-use clap::{Command, Arg};
+use clap::{Arg, Command};
 use console::Term;
 use evaluator::Evaluator;
 use lexer::Lexer;
 use objects::Object;
 use parser::Parser;
 use repl::repl;
+use std::{fs, io::Error};
 
 pub const PANA_MIGUEL_ASCII: &str = include_str!("../assets/pana_miguel.txt");
 
@@ -37,7 +37,10 @@ fn main() -> Result<(), Error> {
         }
 
         let mut evaluator = Evaluator::new();
-        for line in fs::read_to_string(archivo).expect(&format!("No es encotro el archivo {}", archivo)).lines() {
+        for line in fs::read_to_string(archivo)
+            .expect(&format!("No es encotro el archivo {}", archivo))
+            .lines()
+        {
             let lexer = Lexer::new(&line);
             let mut parser = Parser::new(lexer);
 
@@ -61,7 +64,7 @@ fn main() -> Result<(), Error> {
                 Object::Error(msg) => {
                     println!("{}", msg);
                     return Ok(());
-                },
+                }
                 _ => {}
             }
         }

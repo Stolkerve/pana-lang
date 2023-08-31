@@ -5,9 +5,9 @@ use crate::{
         expressions::{format_arguments, FnParams},
         statements::BlockStatement,
     },
-    environment::Environment, buildins::BuildinFnPointer,
+    buildins::BuildinFnPointer,
+    environment::Environment,
 };
-
 
 #[derive(Clone)]
 pub enum Object {
@@ -30,7 +30,7 @@ pub enum Object {
     },
     BuildinFn {
         name: String,
-        func: Box<dyn BuildinFnPointer>
+        func: Box<dyn BuildinFnPointer>,
     },
     Void,
     Null,
@@ -45,9 +45,42 @@ impl PartialEq for Object {
             (Self::String(l0), Self::String(r0)) => l0 == r0,
             (Self::Return(l0), Self::Return(r0)) => l0 == r0,
             (Self::Array(l0), Self::Array(r0)) => l0 == r0,
-            (Self::FnExpr { params: l_params, body: l_body, env: l_env }, Self::FnExpr { params: r_params, body: r_body, env: r_env }) => false,
-            (Self::Fn { name: l_name, params: l_params, body: l_body, env: l_env }, Self::Fn { name: r_name, params: r_params, body: r_body, env: r_env }) => l_name == r_name,
-            (Self::BuildinFn { name: l_name, func: l_func }, Self::BuildinFn { name: r_name, func: r_func }) => l_name == r_name,
+            (
+                Self::FnExpr {
+                    params: l_params,
+                    body: l_body,
+                    env: l_env,
+                },
+                Self::FnExpr {
+                    params: r_params,
+                    body: r_body,
+                    env: r_env,
+                },
+            ) => false,
+            (
+                Self::Fn {
+                    name: l_name,
+                    params: l_params,
+                    body: l_body,
+                    env: l_env,
+                },
+                Self::Fn {
+                    name: r_name,
+                    params: r_params,
+                    body: r_body,
+                    env: r_env,
+                },
+            ) => l_name == r_name,
+            (
+                Self::BuildinFn {
+                    name: l_name,
+                    func: l_func,
+                },
+                Self::BuildinFn {
+                    name: r_name,
+                    func: r_func,
+                },
+            ) => l_name == r_name,
             _ => core::mem::discriminant(self) == core::mem::discriminant(other),
         }
     }
@@ -86,7 +119,14 @@ impl Display for Object {
             Object::BuildinFn { name, .. } => write!(f, "fn {}(...) {{...}}", name),
             Object::String(string) => write!(f, "{}", string),
             Object::Void => write!(f, ""),
-            Object::Array(objs) => write!(f, "[{}]", objs.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(", ")),
+            Object::Array(objs) => write!(
+                f,
+                "[{}]",
+                objs.iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
         }
     }
 }
