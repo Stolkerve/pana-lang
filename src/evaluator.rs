@@ -65,7 +65,7 @@ impl Evaluator {
         // TODO: Arregla eso del context
         let context: Context;
         match program.len() {
-            0 => Object::Null,
+            0 => Object::Void,
             1 => {
                 let stmt = program.remove(0);
                 context = if root_context == &Context::Global {
@@ -243,6 +243,8 @@ impl Evaluator {
             (Object::String(a), Object::String(b)) => {
                 self.eval_infix_string_operation(&a, &b, operator)
             }
+            ( Object::Error(msg), _) => Object::Error(msg),
+            (_, Object::Error(msg)) => Object::Error(msg),
             _ => Object::Null,
         }
     }
@@ -323,6 +325,15 @@ impl Evaluator {
         root_context: &Context,
     ) -> Object {
         let obj = self.eval_expression(value, env, root_context);
+        match obj {
+            Object::Error(msg) => {
+                return Object::Error(msg);
+            },
+            Object::Void => {
+                return Object::Error("No se puede asignar el tipo de dato vacio a una variable".to_owned());
+            },
+            _ => {}
+        }
         self.push_obj(name, obj, env)
     }
 
@@ -365,6 +376,12 @@ impl Evaluator {
             Object::BuildinFn { func, .. } => func(self, arguments, env, root_context),
             _ => Object::Error("XD".to_owned()),
         }
+
+        // match returned_obj {
+        //     Object::Return(_) => returned_obj,
+        //     Object::Error(_) => returned_obj,
+        //     _ => Object::Void
+        // }
     }
 
     fn eval_fn_expr(

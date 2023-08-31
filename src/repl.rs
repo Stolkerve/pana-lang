@@ -1,4 +1,4 @@
-use crate::{evaluator::Evaluator, lexer::Lexer, parser::Parser, PANA_MIGUEL_ASCII};
+use crate::{evaluator::Evaluator, lexer::Lexer, parser::Parser, PANA_MIGUEL_ASCII, objects::Object};
 use std::{collections::VecDeque, io::Error};
 
 pub fn repl(term: console::Term) -> Result<(), Error> {
@@ -50,7 +50,12 @@ pub fn repl(term: console::Term) -> Result<(), Error> {
             ))?;
             continue;
         }
-        term.write_line(&format!("{}", evaluator.eval_program(program)))?;
+        match evaluator.eval_program(program) {
+            Object::Void => {} 
+            obj => {
+                term.write_line(&format!("{}", obj))?;
+            }
+        }
     }
 }
 

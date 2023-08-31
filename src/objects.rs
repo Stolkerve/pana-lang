@@ -31,6 +31,7 @@ pub enum Object {
         name: String,
         func: Box<dyn BuildinFnPointer>
     },
+    Void,
     Null,
 }
 
@@ -46,6 +47,7 @@ impl Object {
             Object::Fn { .. } => "funcion",
             Object::BuildinFn { .. } => "funcion",
             Object::Null => "nulo",
+            Object::Void => "vacio",
         }
     }
 }
@@ -56,7 +58,7 @@ impl Display for Object {
             Object::Int(int) => write!(f, "{}", int),
             Object::Boolean(b) => write!(f, "{}", bool_to_spanish(*b)),
             Object::Null => write!(f, "nulo"),
-            Object::Error(msg) => write!(f, "{}", console::style(msg).red()),
+            Object::Error(msg) => write!(f, "{}", msg),
             Object::Return(obj) => write!(f, "{}", obj),
             Object::Fn { params, name, .. } => {
                 write!(f, "fn {}({}) {{...}}", name, format_arguments(params))
@@ -64,6 +66,7 @@ impl Display for Object {
             Object::FnExpr { params, .. } => write!(f, "fn({}) {{...}}", format_arguments(params)),
             Object::BuildinFn { name, .. } => write!(f, "fn {}(...) {{...}}", name),
             Object::String(string) => write!(f, "{}", string),
+            Object::Void => write!(f, ""),
         }
     }
 }

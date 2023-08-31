@@ -61,7 +61,10 @@ pub fn buildin_imprimir_fn(
 ) -> Object {
     if !args.is_empty() {
         let objs = args.iter().map(|arg| eval.eval_expression(arg.clone(), env, root_context)).collect::<Vec<_>>();
-        return Object::String(objs.iter().map(|obj| obj.to_string()).collect::<Vec<_>>().join(""));
+        let string = objs.iter().map(|obj| obj.to_string()).collect::<Vec<_>>().join("");
+        println!("{}", string);
+        return Object::Void;
     }
-    Object::String("\n".to_owned())
+    println!("");
+    Object::Void
 }
