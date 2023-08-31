@@ -57,7 +57,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn check_semicolon(&mut self) -> Option<ParserError > {
+    fn check_semicolon(&mut self) -> Option<ParserError> {
         if self.peek_token_is(Token::SemiColon) {
             None
         } else {
@@ -65,7 +65,7 @@ impl<'a> Parser<'a> {
             if peek == &Token::Eof {
                 return Some(ParserError::MissingSemiColon);
             }
-            return Some(ParserError::Illegal(peek.clone()));
+            Some(ParserError::Illegal(peek.clone()))
         }
     }
 
@@ -91,10 +91,10 @@ impl<'a> Parser<'a> {
         match self.check_semicolon() {
             Some(err) => {
                 return Err(err);
-            },
+            }
             None => {
                 self.next_token();
-            },
+            }
         }
 
         Ok(Statement::Var {
@@ -111,10 +111,10 @@ impl<'a> Parser<'a> {
         match self.check_semicolon() {
             Some(err) => {
                 return Err(err);
-            },
+            }
             None => {
                 self.next_token();
-            },
+            }
         }
 
         match expr {
@@ -231,19 +231,22 @@ impl<'a> Parser<'a> {
 
         self.next_token();
         self.next_token();
-        
+
         let expr = self.parse_expression(Precedence::Lowest)?;
 
         match self.check_semicolon() {
             Some(err) => {
                 return Err(err);
-            },
+            }
             None => {
                 self.next_token();
-            },
+            }
         }
 
-        Ok(Expression::Assignment { name, value: Box::new(expr) })
+        Ok(Expression::Assignment {
+            name,
+            value: Box::new(expr),
+        })
     }
 
     fn parse_prefix_expression(&mut self) -> Result<Expression, ParserError> {
@@ -463,13 +466,9 @@ impl<'a> Parser<'a> {
             return Err(ParserError::MissingRightParen);
         }
 
-        match self.check_semicolon() {
-            Some(err) => {
-                return Err(err);
-            },
-            None => {
-                self.next_token();
-            },
+        if *self.peek_token() == Token::Eof {
+            self.next_token();
+            return Err(ParserError::MissingSemiColon);
         }
 
         Ok(args)

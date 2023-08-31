@@ -5,7 +5,6 @@ use crate::objects::Object;
 pub type StackObject = HashMap<String, Object>;
 pub type RcEnvironment = Rc<RefCell<Environment>>;
 
-#[derive(Debug)]
 pub struct Environment {
     stack: StackObject,
     parent: Option<RcEnvironment>,

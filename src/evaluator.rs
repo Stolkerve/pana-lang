@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
     ast::{
@@ -6,13 +6,14 @@ use crate::{
         statements::{BlockStatement, Statement},
         Program,
     },
+    buildins::{buildin_imprimir_fn, buildin_lon_fn, BuildinFnPointer},
     environment::{Environment, RcEnvironment},
     objects::Object,
     token::Token,
 };
 
 #[derive(PartialEq, Clone, Debug)]
-enum Context {
+pub enum Context {
     Global,
     If,
     Fn,
@@ -20,12 +21,29 @@ enum Context {
 
 pub struct Evaluator {
     environment: RcEnvironment,
+    buildins_fn: HashMap<String, Box<dyn BuildinFnPointer>>,
+}
+
+impl Default for Evaluator {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Evaluator {
     pub fn new() -> Self {
         Self {
             environment: Rc::new(RefCell::new(Environment::new(None))),
+            buildins_fn: HashMap::from([
+                (
+                    "lon".to_owned(),
+                    Box::new(buildin_lon_fn) as Box<dyn BuildinFnPointer>,
+                ),
+                (
+                    "imprimir".to_owned(),
+                    Box::new(buildin_imprimir_fn) as Box<dyn BuildinFnPointer>,
+                ),
+            ]),
         }
     }
 
@@ -45,7 +63,7 @@ impl Evaluator {
     ) -> Object {
         // from https://github.com/Rydgel/monkey-rust/blob/master/lib/evaluator/mod.rs#L332
         // TODO: Arregla eso del context
-        let context: Context; 
+        let context: Context;
         match program.len() {
             0 => Object::Null,
             1 => {
@@ -106,13 +124,13 @@ impl Evaluator {
 
                 match self.check_ident(&name, env) {
                     Some(obj) => obj,
-                    None => self.push_obj(name, obj, env)
+                    None => self.push_obj(name, obj, env),
                 }
             }
         }
     }
 
-    fn eval_expression(
+    pub fn eval_expression(
         &mut self,
         expr: Expression,
         env: &RcEnvironment,
@@ -143,7 +161,7 @@ impl Evaluator {
             Expression::Call {
                 function,
                 arguments,
-            } => self.eval_call(function, arguments, env, root_context),
+            } => self.eval_call(*function, arguments, env, root_context),
             Expression::Assignment { name, value } => self.set_var(name, *value, env, root_context),
             Expression::StringLiteral(string) => Object::String(string),
         }
@@ -268,27 +286,33 @@ impl Evaluator {
         self.push_var(name, value, env, root_context)
     }
 
-    fn set_var(&mut self, name: String, value: Expression, env: &RcEnvironment, root_context: &Context) -> Object {
+    fn set_var(
+        &mut self,
+        name: String,
+        value: Expression,
+        env: &RcEnvironment,
+        root_context: &Context,
+    ) -> Object {
         if self.check_ident(&name, env).is_none() {
             return Object::Error(format!("El no existe referencias hacia `{}`", name));
         }
 
         let obj = self.eval_expression(value, env, root_context);
         let mut env_ref = RefCell::borrow_mut(env);
-    
+
         env_ref.update(name, obj.clone());
         obj
     }
 
     fn check_ident(&self, name: &String, env: &RcEnvironment) -> Option<Object> {
         let env_ref = RefCell::borrow(env);
-        match env_ref.get(&name) {
-            Some(_) => Some(Object::Error(format!(
+
+        env_ref.get(name).map(|_| {
+            Object::Error(format!(
                 "El identificador `{}` ya habia sido declarado",
                 name
-            ))),
-            None => None,
-        }
+            ))
+        })
     }
 
     fn push_var(
@@ -309,21 +333,28 @@ impl Evaluator {
     }
 
     fn eval_identifier(&mut self, ident: String, env: &RcEnvironment) -> Object {
-        
         match env.borrow().get(&ident) {
             Some(obj) => obj.clone(),
-            None => Object::Error(format!("El identicador `{}` no existe.", ident)),
+            None => {
+                if let Some(func) = self.buildins_fn.get(&ident) {
+                    return Object::BuildinFn {
+                        name: ident.clone(),
+                        func: Box::new(func.clone()),
+                    };
+                }
+                Object::Error(format!("El identicador `{}` no existe.", ident))
+            }
         }
     }
 
     fn eval_call(
         &mut self,
-        function: Box<Expression>,
+        function: Expression,
         arguments: Vec<Expression>,
         env: &RcEnvironment,
         root_context: &Context,
     ) -> Object {
-        let obj = self.eval_expression(*function, env, root_context);
+        let obj = self.eval_expression(function, env, root_context);
         match obj {
             Object::FnExpr { params, body, env } => {
                 self.eval_fn_expr(arguments, params, body, &env, root_context)
@@ -331,6 +362,7 @@ impl Evaluator {
             Object::Fn {
                 params, body, env, ..
             } => self.eval_fn_expr(arguments, params, body, &env, root_context),
+            Object::BuildinFn { func, .. } => func(self, arguments, env, root_context),
             _ => Object::Error("XD".to_owned()),
         }
     }
@@ -356,6 +388,6 @@ impl Evaluator {
                 self.push_var(param_name, arg.to_owned(), &scope_env, root_context);
             }
         }
-        return self.eval_block_statement(body, &scope_env, root_context);
+        self.eval_block_statement(body, &scope_env, root_context)
     }
 }

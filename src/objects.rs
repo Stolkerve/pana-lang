@@ -5,10 +5,11 @@ use crate::{
         expressions::{format_arguments, FnParams},
         statements::BlockStatement,
     },
-    environment::Environment,
+    environment::Environment, buildins::BuildinFnPointer,
 };
 
-#[derive(Debug, Clone)]
+
+#[derive(Clone)]
 pub enum Object {
     Int(i64),
     Boolean(bool),
@@ -26,7 +27,27 @@ pub enum Object {
         body: BlockStatement,
         env: Rc<RefCell<Environment>>,
     },
+    BuildinFn {
+        name: String,
+        func: Box<dyn BuildinFnPointer>
+    },
     Null,
+}
+
+impl Object {
+    pub fn get_type(&self) -> &str {
+        match self {
+            Object::Int(_) => "numerico",
+            Object::Boolean(_) => "logico",
+            Object::Error(_) => "error",
+            Object::String(_) => "cadena",
+            Object::Return(obj) => obj.get_type(),
+            Object::FnExpr { .. } => "funcion",
+            Object::Fn { .. } => "funcion",
+            Object::BuildinFn { .. } => "funcion",
+            Object::Null => "nulo",
+        }
+    }
 }
 
 impl Display for Object {
@@ -41,7 +62,8 @@ impl Display for Object {
                 write!(f, "fn {}({}) {{...}}", name, format_arguments(params))
             }
             Object::FnExpr { params, .. } => write!(f, "fn({}) {{...}}", format_arguments(params)),
-            Object::String(string) => write!(f, "\"{}\"", string),
+            Object::BuildinFn { name, .. } => write!(f, "fn {}(...) {{...}}", name),
+            Object::String(string) => write!(f, "{}", string),
         }
     }
 }

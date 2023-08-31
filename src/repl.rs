@@ -1,10 +1,10 @@
-use std::{io::Error, collections::VecDeque};
-use clap::{arg, Command, Arg};
 use crate::{evaluator::Evaluator, lexer::Lexer, parser::Parser};
+use clap::{Arg, Command};
+use std::{collections::VecDeque, io::Error};
 
 use console::Term;
 
-const PANA_MIGUEL_ASCII: &'static str = include_str!("../assets/pana_miguel.txt");
+const PANA_MIGUEL_ASCII: &str = include_str!("../assets/pana_miguel.txt");
 
 pub fn repl() -> Result<(), Error> {
     let matches = Command::new("Lenguaje de programacion Pana")

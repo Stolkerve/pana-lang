@@ -35,7 +35,7 @@ pub enum Expression {
     Assignment {
         name: String,
         value: Box<Expression>,
-    }
+    },
 }
 
 impl Display for Expression {
@@ -64,7 +64,7 @@ impl Display for Expression {
     }
 }
 
-pub fn format_arguments(exprs: &Vec<Expression>) -> String {
+pub fn format_arguments(exprs: &[Expression]) -> String {
     exprs
         .iter()
         .map(|x| x.to_string())

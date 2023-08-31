@@ -3,7 +3,7 @@ use self::statements::BlockStatement;
 pub mod expressions;
 pub mod statements;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Program {
     pub statements: BlockStatement,
 }
@@ -11,7 +11,7 @@ pub struct Program {
 impl Program {
     pub fn new() -> Self {
         Self {
-            statements: BlockStatement::default(),
+            statements: BlockStatement::new(),
         }
     }
 }
