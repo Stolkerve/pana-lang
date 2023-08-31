@@ -1,28 +1,7 @@
-use crate::{evaluator::Evaluator, lexer::Lexer, parser::Parser};
-use clap::{Arg, Command};
+use crate::{evaluator::Evaluator, lexer::Lexer, parser::Parser, PANA_MIGUEL_ASCII};
 use std::{collections::VecDeque, io::Error};
 
-use console::Term;
-
-const PANA_MIGUEL_ASCII: &str = include_str!("../assets/pana_miguel.txt");
-
-pub fn repl() -> Result<(), Error> {
-    let matches = Command::new("Lenguaje de programacion Pana")
-        .version("0.1")
-        .author("Sebastian Gonzalez. <devsebasgr@gmail.com>")
-        .about("Lenguaje de programacion en espanol!")
-        .arg(Arg::new("archivo"))
-        .get_matches();
-
-    let term = Term::stdout();
-    clearscreen::clear().expect("");
-
-    if let Some(archivo) = matches.get_one::<String>("archivo") {
-        if archivo == "pana" {
-            term.write_line(PANA_MIGUEL_ASCII)?;
-        }
-    }
-
+pub fn repl(term: console::Term) -> Result<(), Error> {
     term.write_line(&format!(
         "{}",
         console::style("¡Bienvenido al lenguaje de programacion Pana!").bold()

@@ -1,0 +1,4 @@
+var a = "hola";
+var b = "mundo";
+
+imprimir(a, " ", b);

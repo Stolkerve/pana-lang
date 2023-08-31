@@ -16,7 +16,7 @@ https://www.rust-lang.org/tools/install\
 ```cargo build```
 
 # Comandos
-#### Ejecutar un archivo .pana (futuro)
+#### Ejecutar un archivo .pana o cualquier archivo, no descriminamos la extension.
 ```pana archivo.pana```
 
 #### Arte
