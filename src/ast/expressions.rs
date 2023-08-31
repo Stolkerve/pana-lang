@@ -10,6 +10,7 @@ pub enum Expression {
     IntLiteral(i64),
     BooleanLiteral(bool),
     StringLiteral(String),
+    NullLiteral,
     FnLiteral {
         params: FnParams,
         body: BlockStatement,
@@ -69,6 +70,7 @@ impl Display for Expression {
             Expression::StringLiteral(string) => write!(f, "\"{}\"", string),
             Expression::ArrayLiteral { elements } => write!(f, "[{}]", format_arguments(elements)),
             Expression::Index { left, index } => write!(f, "{}[{}]", *left, *index),
+            Expression::NullLiteral => write!(f, "nulo"),
         }
     }
 }

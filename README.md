@@ -69,13 +69,14 @@ var e = [1, 2 "hola", [fn(x) { x * 2}, d]];
 
 # Operaciones
 ```
-nulo == 0 -> verdad
-nulo != verdad -> verdad
+falso == 0 -> verdad
+falso != verdad -> verdad
 "hola" == "chao" -> falso
 4 < 0 -> falso
 9 > 8 -> verdad
 1 >= 1 -> verdad 
 0 <= 1 -> verdad 
+nulo != 2 -> verdad
 [1, 2, [3, 4]] != [1, 2] -> verdad
 [1, 2, 3] > [1, 2] -> verdad
 
@@ -83,6 +84,7 @@ nulo != verdad -> verdad
 2 - 4 -> -2
 4 * 4 -> 16
 2 / 2 -> 0
+verdad - 1 -> 0
 "hola" + " " + "mundo" -> "hola mundo"
 [1, 2] + [3, 4] -> [1, 2, 3, 4]
 2 == [0, 2][1]
@@ -107,7 +109,7 @@ imprimir("hola ", "mundo") -> "hola mundo"
 - ✅️ tipo de datos: entero, nulo, vacio, logico, lista, diccionario y cadena (string).
 - ✅ Condicionales.
 - ✅ Funciones y funciones anonimas.
-- ✅ Funciones internas basicas (imprimir, longitud, y leer)
+- ✅ Funciones internas basicas (imprimir, tipo, longitud, y leer)
 - ✅ Operaciones
 - ️⬜️ Comentarios
 

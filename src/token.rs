@@ -43,6 +43,7 @@ pub enum Token {
     Else,
     True,
     False,
+    Null
 }
 
 impl Display for Token {
@@ -81,6 +82,7 @@ impl Display for Token {
             Token::Dot => write!(f, "."),
             Token::LBracket => write!(f, "["),
             Token::RBracket => write!(f, "]"),
+            Token::Null => write!(f, "nulo"),
         }
     }
 }
@@ -94,6 +96,7 @@ pub fn keywords_to_tokens(v: &str) -> Token {
         "retornar" => Token::Return,
         "verdad" => Token::True,
         "falso" => Token::False,
+        "nulo" => Token::Null,
         _ => Token::Ident(v.to_owned()),
     }
 }

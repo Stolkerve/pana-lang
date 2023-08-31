@@ -6,7 +6,7 @@ use crate::{
         statements::{BlockStatement, Statement},
         Program,
     },
-    buildins::{buildin_imprimir_fn, buildin_longitud_fn, BuildinFnPointer},
+    buildins::{buildin_imprimir_fn, buildin_longitud_fn, BuildinFnPointer, buildin_tipo_fn},
     environment::{Environment, RcEnvironment},
     objects::Object,
     token::Token,
@@ -42,6 +42,10 @@ impl Evaluator {
                 (
                     "imprimir".to_owned(),
                     Box::new(buildin_imprimir_fn) as Box<dyn BuildinFnPointer>,
+                ),
+                (
+                    "tipo".to_owned(),
+                    Box::new(buildin_tipo_fn) as Box<dyn BuildinFnPointer>,
                 ),
             ]),
         }
@@ -166,6 +170,7 @@ impl Evaluator {
             Expression::StringLiteral(string) => Object::String(string),
             Expression::ArrayLiteral { elements } => self.eval_array_literal(elements, env, root_context),
             Expression::Index { left, index } => self.eval_index_expression(*left, *index, env, root_context),
+            Expression::NullLiteral => Object::Null,
         }
     }
 
@@ -260,6 +265,11 @@ impl Evaluator {
             (Object::Array(a), Object::Int(b)) => {
                 self.eval_infix_array_int_operation(&a, b, operator)
             },
+            (Object::Null, Object::Null) => {
+                self.eval_infix_null_operation(operator)
+            }
+            (Object::Null, _) => self.eval_infix_null_object_operation(operator),
+            (_, Object::Null) => self.eval_infix_null_object_operation(operator),
             ( Object::Error(msg), _) => Object::Error(msg),
             (_, Object::Error(msg)) => Object::Error(msg),
             (a, b) => Object::Error(format!("No se soporta operaciones {} {} {}", a.get_type(), operator, b.get_type())),
@@ -329,6 +339,22 @@ impl Evaluator {
                 Object::Array(objs)
             },
             _ => Object::Null,
+        }
+    }
+
+    fn eval_infix_null_operation(&self, operator: Token) -> Object {
+        match operator {
+            Token::Eq => Object::Boolean(true),
+            Token::NotEq => Object::Boolean(false),
+            _ => Object::Error("XD".to_owned())
+        }
+    }
+
+    fn eval_infix_null_object_operation(&self, operator: Token) -> Object {
+        match operator {
+            Token::Eq => Object::Boolean(false),
+            Token::NotEq => Object::Boolean(true),
+            _ => Object::Error("XD".to_owned())
         }
     }
 

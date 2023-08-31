@@ -68,3 +68,17 @@ pub fn buildin_imprimir_fn(
     println!("");
     Object::Void
 }
+
+// Funcion que retorna el tipo de dato del objeto
+pub fn buildin_tipo_fn(
+    eval: &mut Evaluator,
+    args: FnParams,
+    env: &RcEnvironment,
+    root_context: &Context,
+) -> Object {
+    if args.len() != 1 {
+        return Object::Error(format!("Se encontro {} argumentos de 1", args.len()));
+    }
+    let arg_obj = eval.eval_expression(args.get(0).unwrap().clone(), env, root_context);
+    Object::String(arg_obj.get_type().to_owned())
+}
