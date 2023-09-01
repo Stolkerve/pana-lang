@@ -1,8 +1,8 @@
 # Lenguaje de programacion Pana
-Este lenguaje de programacion esta inspirado en el libro *Writing a interpreter in Go*. El objetivo de este mismo es simplemente recreativo, educativo y experimental. No es un proyecto serio.
+Este lenguaje de programacion esta inspirado en el libro *Writing a interpreter in Go*. El objetivo de este mismo es simplemente recreativo, educativo y experimental. No es un proyecto serio. Sin embargo, apunta a ser un lenguaje capaz de ser usado para proyectos educativos y ser capaz de producir un producto. 
 
 # Compilacion
-## Prerequisitos
+### Prerequisitos
 1. Instalar rust.
 
     https://www.rust-lang.org/tools/instal
@@ -12,11 +12,11 @@ Este lenguaje de programacion esta inspirado en el libro *Writing a interpreter 
 2. Instalar git.
 3. Tener internet.
 
-## Correr el programa
+### Correr el programa
 ```cargo run <comandos opcionales>```
 
-## compilar
-```cargo build```
+### compilar
+```cargo build --release```
 
 # Comandos
 #### Ejecutar un archivo .pana o cualquier archivo, no descriminamos la extension.
@@ -35,7 +35,7 @@ En el modo interactivo tienes los comandos de: `salir`, `limpiar`, `pana`.
 ```
 var a = 20;
 var b = verdad == falso;
-a = b;  a copia el valor de b, no hay referencias
+a = b; |a copia el valor de b, no hay referencias
 ```
 
 #### Condicionales
@@ -61,58 +61,65 @@ fn resta(x, y) {
 
 var total = sumar(1, 2) * resta(4, 5);
 ```
+#### Comentarios
+```
+|Hola esto es un comentario.
+|Lo mismo pero en otra linea.
+var a = ""; |Ahora digo que hace esta variable, nada.
+```
 # Tipo de datos
 ```
-var a = 12;
-var b = verdad;
-var c = "Hola mundo";
-var d = nulo;
-var e = [1, 2 "hola", [fn(x) { x * 2}, d]];
+var a = 12; |Enteros
+var b = verdad; |Logico
+var c = "Hola mundo"; |Cadena
+var d = nulo; |nulo
+var e = [1, 2 "hola", [fn(x) { x * 2}, d]]; |Lista
+var g = {verdad: [{1: 10}, "xd", falso], "hola": "mundo"} |Diccionario
 ```
 
 # Operaciones
 ```
-falso == 0 -> verdad
-falso != verdad -> verdad
-"hola" == "chao" -> falso
-4 < 0 -> falso
-9 > 8 -> verdad
-1 >= 1 -> verdad 
-0 <= 1 -> verdad 
-nulo != 2 -> verdad
-[1, 2, [3, 4]] != [1, 2] -> verdad
-[1, 2, 3] > [1, 2] -> verdad
+falso == 0 |verdad
+falso != verdad |verdad
+"hola" == "chao" |falso
+4 < 0 |falso
+9 > 8 |verdad
+1 >= 1 |verdad 
+0 <= 1 |verdad 
+nulo != 2 |verdad
+[1, 2, [3, 4]] != [1, 2] |verdad
+[1, 2, 3] > [1, 2] |verdad
 
-1 + 2 -> 3
-2 - 4 -> -2
-4 * 4 -> 16
-2 / 2 -> 0
-verdad - 1 -> 0
-"hola" + " " + "mundo" -> "hola mundo"
-[1, 2] + [3, 4] -> [1, 2, 3, 4]
+1 + 2 |3
+2 - 4 |-2
+4 * 4 |16
+2 / 2 |0
+verdad - 1 |0
+"hola" + " " + "mundo" |"hola mundo"
+[1, 2] + [3, 4] |[1, 2, 3, 4]
 2 == [0, 2][1]
-"hola" * 2 -> "holahola"
-[1, 2, [3, 4]] * 2 -> [1, 2, [3, 4], 1, 2, [3, 4]]
+"hola" * 2 |"holahola"
+[1, 2, [3, 4]] * 2 |[1, 2, [3, 4], 1, 2, [3, 4]]
 
 ```
 
 # Funciones internas
 #### Longitud
 ```
-longitud("hola") -> 4
-longitud([1, 2, 3]) -> 3
+longitud("hola") |4
+longitud([1, 2, 3]) |3
 ```
 #### Tipo de dato
 ```
-tipo("hola") -> "cadena"
+tipo("hola") |"cadena"
 ```
 #### Imprimir en consola
 ```
-imprimir("hola ", "mundo") -> "hola mundo"
+imprimir("hola ", "mundo") |"hola mundo"
 ```
 #### Leer consola
 ```
-leer("Ingrese su nombre: ") -> "Sebastian"
+leer("Ingrese su nombre: ") |"Sebastian"
 ```
 
 # Futuro

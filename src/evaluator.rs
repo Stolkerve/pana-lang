@@ -175,13 +175,16 @@ impl Evaluator {
             } => self.eval_call(*function, arguments, env, root_context),
             Expression::Assignment { name, value } => self.set_var(name, *value, env, root_context),
             Expression::StringLiteral(string) => Object::String(string),
-            Expression::ArrayLiteral { elements } => {
-                self.eval_array_literal(elements, env, root_context)
+            Expression::ListLiteral { elements } => {
+                self.eval_list_literal(elements, env, root_context)
             }
             Expression::Index { left, index } => {
                 self.eval_index_expression(*left, *index, env, root_context)
             }
             Expression::NullLiteral => Object::Null,
+            Expression::DictionaryLiteral { pairs } => {
+                self.eval_dictionary_expression(pairs, env, root_context)
+            }
         }
     }
 
@@ -267,14 +270,12 @@ impl Evaluator {
             (Object::Int(a), Object::String(b)) => {
                 self.eval_infix_string_int_operation(&b, a, operator)
             }
-            (Object::Array(a), Object::Array(b)) => {
-                self.eval_infix_array_operation(&a, &b, operator)
+            (Object::List(a), Object::List(b)) => self.eval_infix_list_operation(&a, &b, operator),
+            (Object::Int(a), Object::List(b)) => {
+                self.eval_infix_list_int_operation(&b, a, operator)
             }
-            (Object::Int(a), Object::Array(b)) => {
-                self.eval_infix_array_int_operation(&b, a, operator)
-            }
-            (Object::Array(a), Object::Int(b)) => {
-                self.eval_infix_array_int_operation(&a, b, operator)
+            (Object::List(a), Object::Int(b)) => {
+                self.eval_infix_list_int_operation(&a, b, operator)
             }
             (Object::Null, Object::Null) => self.eval_infix_null_operation(operator),
             (Object::Null, _) => self.eval_infix_null_object_operation(operator),
@@ -329,9 +330,9 @@ impl Evaluator {
         }
     }
 
-    fn eval_infix_array_operation(&self, a: &Vec<Object>, b: &Vec<Object>, op: Token) -> Object {
+    fn eval_infix_list_operation(&self, a: &Vec<Object>, b: &Vec<Object>, op: Token) -> Object {
         match op {
-            Token::Plus => Object::Array([a.as_slice(), b.as_slice()].concat()),
+            Token::Plus => Object::List([a.as_slice(), b.as_slice()].concat()),
             Token::Eq => Object::Boolean(a == b),
             Token::NotEq => Object::Boolean(a != b),
             Token::Lt => Object::Boolean(a.len() < b.len()),
@@ -342,7 +343,7 @@ impl Evaluator {
         }
     }
 
-    fn eval_infix_array_int_operation(&self, a: &Vec<Object>, b: i64, op: Token) -> Object {
+    fn eval_infix_list_int_operation(&self, a: &Vec<Object>, b: i64, op: Token) -> Object {
         match op {
             Token::Mul => {
                 let mut objs = Vec::new();
@@ -350,7 +351,7 @@ impl Evaluator {
                 for _ in 0..b {
                     objs.extend(a.to_owned());
                 }
-                Object::Array(objs)
+                Object::List(objs)
             }
             _ => Object::Null,
         }
@@ -508,7 +509,7 @@ impl Evaluator {
         self.eval_block_statement(body, &scope_env, root_context)
     }
 
-    fn eval_array_literal(
+    fn eval_list_literal(
         &mut self,
         elements: Vec<Expression>,
         env: &Rc<RefCell<Environment>>,
@@ -517,12 +518,12 @@ impl Evaluator {
         let mut objs = Vec::new();
         for expr in elements {
             let obj = self.eval_expression(expr, env, root_context);
-            match obj {
-                Object::Error(_) => return obj,
-                _ => objs.push(obj),
+            if self.is_error(&obj) {
+                return obj;
             }
+            objs.push(obj);
         }
-        Object::Array(objs)
+        Object::List(objs)
     }
 
     fn eval_index_expression(
@@ -535,7 +536,7 @@ impl Evaluator {
         let left_obj = self.eval_expression(left, env, root_context);
         match left_obj {
             Object::Error(_) => left_obj,
-            Object::Array(objs) => {
+            Object::List(objs) => {
                 if let Expression::IntLiteral(index) = index {
                     return match objs.get(index as usize) {
                         Some(obj) => obj.clone(),
@@ -544,7 +545,39 @@ impl Evaluator {
                 }
                 Object::Error("El operador de indexar solo opera con enteros".to_owned())
             }
+            Object::Dictionary { ref pairs } => match pairs.get(&self.eval_expression(index.clone(), env, root_context)) {
+                Some(obj) => obj.clone(),
+                None => Object::Error(format!("Llave invalida {}", index)),
+            },
             _ => Object::Error("Solo se puede usar el operador de indexar en listas".to_owned()),
         }
+    }
+
+    fn eval_dictionary_expression(
+        &mut self,
+        expr_pairs: HashMap<Expression, Expression>,
+        env: &Rc<RefCell<Environment>>,
+        root_context: &Context,
+    ) -> Object {
+        let mut pairs = HashMap::new();
+        for (k, v) in expr_pairs {
+            let obj_key = self.eval_expression(k, env, root_context);
+            if self.is_error(&obj_key) {
+                return obj_key;
+            }
+            let obj_value = self.eval_expression(v, env, root_context);
+            if self.is_error(&obj_value) {
+                return obj_value;
+            }
+            pairs.insert(obj_key, obj_value);
+        }
+        Object::Dictionary { pairs }
+    }
+
+    fn is_error(&mut self, obj: &Object) -> bool {
+        if let Object::Error(_) = obj {
+            return true;
+        }
+        false
     }
 }

@@ -1,7 +1,7 @@
-use self::statements::BlockStatement;
-
 pub mod expressions;
 pub mod statements;
+
+use crate::ast::statements::BlockStatement;
 
 #[derive(Debug, Default)]
 pub struct Program {

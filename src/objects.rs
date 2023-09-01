@@ -1,4 +1,4 @@
-use std::{cell::RefCell, fmt::Display, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc};
 
 use crate::{
     ast::{
@@ -16,7 +16,10 @@ pub enum Object {
     Error(String),
     String(String),
     Return(Box<Object>),
-    Array(Vec<Object>),
+    List(Vec<Object>),
+    Dictionary {
+        pairs: HashMap<Object, Object>,
+    },
     FnExpr {
         params: FnParams,
         body: BlockStatement,
@@ -36,6 +39,14 @@ pub enum Object {
     Null,
 }
 
+impl std::hash::Hash for Object {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        core::mem::discriminant(self).hash(state);
+    }
+}
+
+impl Eq for Object {}
+
 impl PartialEq for Object {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -44,8 +55,8 @@ impl PartialEq for Object {
             (Self::Error(l0), Self::Error(r0)) => l0 == r0,
             (Self::String(l0), Self::String(r0)) => l0 == r0,
             (Self::Return(l0), Self::Return(r0)) => l0 == r0,
-            (Self::Array(l0), Self::Array(r0)) => l0 == r0,
-            (Self::FnExpr { .. }, Self::FnExpr { .. }) => false,
+            (Self::List(l0), Self::List(r0)) => l0 == r0,
+            (Self::FnExpr { .. }, Self::FnExpr { .. }) => panic!("No se puede comparar funciones"),
             (Self::Fn { name: l_name, .. }, Self::Fn { name: r_name, .. }) => l_name == r_name,
             (Self::BuildinFn { name: l_name, .. }, Self::BuildinFn { name: r_name, .. }) => {
                 l_name == r_name
@@ -68,7 +79,8 @@ impl Object {
             Object::BuildinFn { .. } => "funcion",
             Object::Null => "nulo",
             Object::Void => "vacio",
-            Object::Array(_) => "lista",
+            Object::List(_) => "lista",
+            Object::Dictionary { .. } => "diccionario",
         }
     }
 }
@@ -88,12 +100,21 @@ impl Display for Object {
             Object::BuildinFn { name, .. } => write!(f, "fn {}(...) {{...}}", name),
             Object::String(string) => write!(f, "{}", string),
             Object::Void => write!(f, ""),
-            Object::Array(objs) => write!(
+            Object::List(objs) => write!(
                 f,
                 "[{}]",
                 objs.iter()
                     .map(|x| x.to_string())
                     .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+            Object::Dictionary { pairs } => write!(
+                f,
+                "{{{}}}",
+                pairs
+                    .iter()
+                    .map(|(x, y)| format!("{}: {}", x, y))
+                    .collect::<Vec<String>>()
                     .join(", ")
             ),
         }

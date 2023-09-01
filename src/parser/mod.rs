@@ -1,7 +1,7 @@
-pub mod errors;
-pub mod precedence;
+mod errors;
+mod precedence;
 
-use std::iter::Peekable;
+use std::{collections::HashMap, iter::Peekable};
 
 use crate::ast::{
     expressions::{Expression, FnParams},
@@ -154,6 +154,7 @@ impl<'a> Parser<'a> {
                 Token::Sub => self.parse_prefix_expression(),
                 Token::LParen => self.parse_grouped_expression(),
                 Token::LBracket => self.parse_array_literal(),
+                Token::LBrace => self.parse_dictionary_literal(),
 
                 // Contitions
                 Token::If => self.parse_if_expression(),
@@ -517,7 +518,7 @@ impl<'a> Parser<'a> {
     fn parse_array_literal(&mut self) -> Result<Expression, ParserError> {
         let elements =
             self.parse_expression_list(&Token::RBracket, ParserError::MissingRightBracket)?;
-        Ok(Expression::ArrayLiteral { elements })
+        Ok(Expression::ListLiteral { elements })
     }
 
     fn parse_index_expression(&mut self, left: Expression) -> Result<Expression, ParserError> {
@@ -532,5 +533,34 @@ impl<'a> Parser<'a> {
             left: Box::new(left),
             index: Box::new(index),
         })
+    }
+
+    fn parse_dictionary_literal(&mut self) -> Result<Expression, ParserError> {
+        let mut dictionary = HashMap::new();
+        while !self.peek_token_is(&Token::RBrace) {
+            self.next_token();
+            let key = self.parse_expression(Precedence::Lowest)?;
+            if !self.expected_peek(&Token::Colon) {
+                return Err(ParserError::MissingColon);
+            }
+            if let Expression::FnLiteral { .. } = key {
+                return Err(ParserError::IllegalMsg(
+                    "No se puede usar funciones anonimas como llaves".to_owned(),
+                ));
+            }
+            self.next_token();
+            let value = self.parse_expression(Precedence::Lowest)?;
+
+            dictionary.insert(key, value);
+
+            if !self.peek_token_is(&Token::RBrace) && !self.expected_peek(&Token::Comma) {
+                return Err(ParserError::MissingComma);
+            }
+        }
+
+        if !self.expected_peek(&Token::RBrace) {
+            return Err(ParserError::MissingRightBrace);
+        }
+        Ok(Expression::DictionaryLiteral { pairs: dictionary })
     }
 }

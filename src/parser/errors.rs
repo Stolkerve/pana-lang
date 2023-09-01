@@ -5,8 +5,11 @@ use crate::token::Token;
 #[derive(Debug, PartialEq)]
 pub enum ParserError {
     Illegal(Token),
+    IllegalMsg(String),
     MissingIdentifier,
     MissingAssign,
+    MissingColon,
+    MissingComma,
     MissingExpression,
     MissingSemiColon,
     MissingLeftBrace,
@@ -29,6 +32,9 @@ impl Display for ParserError {
             ParserError::MissingLeftParen => write!(f, "Falta el `(`"),
             ParserError::MissingRightParen => write!(f, "Falta el )"),
             ParserError::MissingRightBracket => write!(f, "Falta el ]"),
+            ParserError::MissingColon => write!(f, "Falta el :"),
+            ParserError::MissingComma => write!(f, "Falta la ,"),
+            ParserError::IllegalMsg(msg) => write!(f, "{}", msg),
         }
     }
 }
