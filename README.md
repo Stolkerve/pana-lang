@@ -3,9 +3,12 @@ Este lenguaje de programacion esta inspirado en el libro *Writing a interpreter 
 
 # Compilacion
 ## Prerequisitos
-1. Instalar rust.\
-https://www.rust-lang.org/tools/install\
-```curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh```
+1. Instalar rust.
+
+    https://www.rust-lang.org/tools/instal
+
+    ```curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh```
+
 2. Instalar git.
 3. Tener internet.
 
