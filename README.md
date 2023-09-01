@@ -120,7 +120,7 @@ leer("Ingrese su nombre: ") -> "Sebastian"
 - ✅ Funciones y funciones anonimas.
 - ✅ Funciones internas basicas (imprimir, tipo, longitud, y leer)
 - ✅ Operaciones
-- ️⬜️ Comentarios
+- ️✅️ Comentarios
 
 ### Version 0.2
 - ⬜️ Mejora en los mensajes de error con columna y linea
