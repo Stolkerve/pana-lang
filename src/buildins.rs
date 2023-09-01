@@ -73,7 +73,7 @@ pub fn buildin_imprimir_fn(
         println!("{}", string);
         return Object::Void;
     }
-    println!("");
+    println!();
     Object::Void
 }
 
@@ -104,7 +104,7 @@ pub fn buildin_leer_fn(
                 .allow_empty(true)
                 .interact_text()
                 .unwrap();
-            return Object::String(output);
+            Object::String(output)
         }
         1 => {
             let arg_obj = eval.eval_expression(args.get(0).unwrap().clone(), env, root_context);
@@ -121,8 +121,6 @@ pub fn buildin_leer_fn(
                 arg_obj.get_type()
             ))
         }
-        _ => {
-            return Object::Error(format!("Se encontro {} argumentos de 1", args.len()));
-        }
+        _ => Object::Error(format!("Se encontro {} argumentos de 1", args.len())),
     }
 }

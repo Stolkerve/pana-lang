@@ -4,6 +4,7 @@ use std::fmt::Display;
 pub enum Token {
     Illegal(char),
     Eof,
+    CommentLine,
 
     // Identifiers, literals
     Ident(String),
@@ -34,6 +35,7 @@ pub enum Token {
     RBrace,
     LBracket,
     RBracket,
+    Colon,
 
     // Keywords
     Func,
@@ -83,6 +85,8 @@ impl Display for Token {
             Token::LBracket => write!(f, "["),
             Token::RBracket => write!(f, "]"),
             Token::Null => write!(f, "nulo"),
+            Token::CommentLine => write!(f, "|"),
+            Token::Colon => write!(f, ":"),
         }
     }
 }

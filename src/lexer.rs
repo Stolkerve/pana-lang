@@ -102,6 +102,11 @@ impl<'a> Lexer<'a> {
         self.input[start + 1..end].to_owned()
     }
 
+    fn read_to_end(&mut self) -> Token {
+        while self.read_char().is_some() {}
+        Token::CommentLine
+    }
+
     pub fn next_token(&mut self) -> Token {
         self.eat_whitespace();
 
@@ -125,6 +130,8 @@ impl<'a> Lexer<'a> {
             Some((_, '[')) => Token::LBracket,
             Some((_, ']')) => Token::RBracket,
             Some((_, '.')) => Token::Dot,
+            Some((_, '|')) => self.read_to_end(),
+            Some((_, ':')) => Token::Colon,
             Some((index, '"')) => Token::String(self.read_string(index)),
             Some((index, char)) => {
                 if is_alphabetic(char) {

@@ -35,7 +35,7 @@ impl<'a> Parser<'a> {
 
     pub fn parse_program(&mut self) -> Program {
         let mut program = Program::new();
-        while self.current_token != Token::Eof {
+        while self.current_token != Token::Eof && self.current_token != Token::CommentLine {
             match self.parse_statement() {
                 Ok(stmt) => program.statements.push(stmt),
                 Err(err) => {

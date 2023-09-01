@@ -38,10 +38,10 @@ fn main() -> Result<(), Error> {
 
         let mut evaluator = Evaluator::new();
         for line in fs::read_to_string(archivo)
-            .expect(&format!("No es encotro el archivo {}", archivo))
+            .unwrap_or_else(|_| panic!("No es encotro el archivo {}", archivo))
             .lines()
         {
-            let lexer = Lexer::new(&line);
+            let lexer = Lexer::new(line);
             let mut parser = Parser::new(lexer);
 
             if !parser.errors.is_empty() {
@@ -60,12 +60,9 @@ fn main() -> Result<(), Error> {
                 return Ok(());
             }
             let program = parser.parse_program();
-            match evaluator.eval_program(program) {
-                Object::Error(msg) => {
-                    println!("{}", msg);
-                    return Ok(());
-                }
-                _ => {}
+            if let Object::Error(msg) = evaluator.eval_program(program) {
+                println!("{}", msg);
+                return Ok(());
             }
         }
         return Ok(());

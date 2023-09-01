@@ -315,7 +315,7 @@ impl Evaluator {
         }
     }
 
-    fn eval_infix_string_int_operation(&self, a: &String, b: i64, op: Token) -> Object {
+    fn eval_infix_string_int_operation(&self, a: &str, b: i64, op: Token) -> Object {
         match op {
             Token::Mul => {
                 let mut string = String::new();
