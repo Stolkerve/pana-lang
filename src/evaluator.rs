@@ -8,10 +8,10 @@ use crate::{
     },
     buildins::{
         buildin_imprimir_fn, buildin_leer_fn, buildin_longitud_fn, buildin_tipo_fn,
-        BuildinFnPointer,
+        BuildinFnPointer, buildin_cadena_fn,
     },
     environment::{Environment, RcEnvironment},
-    objects::Object,
+    objects::{new_rc_object, Object, ResultObj},
     token::Token,
 };
 
@@ -54,11 +54,15 @@ impl Evaluator {
                     "leer".to_owned(),
                     Box::new(buildin_leer_fn) as Box<dyn BuildinFnPointer>,
                 ),
+                (
+                    "cadena".to_owned(),
+                    Box::new(buildin_cadena_fn) as Box<dyn BuildinFnPointer>,
+                ),
             ]),
         }
     }
 
-    pub fn eval_program(&mut self, program: Program) -> Object {
+    pub fn eval_program(&mut self, program: Program) -> ResultObj {
         self.eval_block_statement(
             program.statements,
             &self.environment.clone(),
@@ -71,12 +75,12 @@ impl Evaluator {
         mut program: BlockStatement,
         env: &RcEnvironment,
         root_context: &Context,
-    ) -> Object {
+    ) -> ResultObj {
         // from https://github.com/Rydgel/monkey-rust/blob/master/lib/evaluator/mod.rs#L332
         // TODO: Arregla eso del context
         let context: Context;
         match program.len() {
-            0 => Object::Void,
+            0 => ResultObj::Borrow(Object::Void),
             1 => {
                 let stmt = program.remove(0);
                 context = if root_context == &Context::Global {
@@ -94,7 +98,7 @@ impl Evaluator {
                     root_context.clone()
                 };
                 match self.eval_statement(stmt, env, &context) {
-                    Object::Return(obj) => *obj,
+                    ResultObj::Borrow(Object::Return(obj)) => *obj,
                     _ => self.eval_block_statement(program, env, &context),
                 }
             }
@@ -118,24 +122,23 @@ impl Evaluator {
         stmt: Statement,
         env: &RcEnvironment,
         root_context: &Context,
-    ) -> Object {
+    ) -> ResultObj {
         match stmt {
             Statement::Var { name, value } => self.eval_var(name, value, env, root_context),
-            Statement::Return(expr) => {
-                Object::Return(Box::new(self.eval_expression(expr, env, root_context)))
-            }
+            Statement::Return(expr) => ResultObj::Borrow(Object::Return(Box::new(
+                self.eval_expression(expr, env, root_context),
+            ))),
             Statement::Expression(expr) => self.eval_expression(expr, env, root_context),
             Statement::Fn { name, params, body } => {
-                let obj = Object::Fn {
+                let obj = ResultObj::Borrow(Object::Fn {
                     name: name.clone(),
                     params,
                     body,
                     env: env.clone(),
-                };
-
-                match self.check_ident(&name, env) {
+                });
+                match self.get_var_value(&name, env) {
                     Some(obj) => obj,
-                    None => self.push_obj(name, obj, env),
+                    None => self.insert_obj(name, obj, env),
                 }
             }
         }
@@ -146,10 +149,10 @@ impl Evaluator {
         expr: Expression,
         env: &RcEnvironment,
         root_context: &Context,
-    ) -> Object {
+    ) -> ResultObj {
         match expr {
-            Expression::IntLiteral(int) => Object::Int(int),
-            Expression::BooleanLiteral(b) => Object::Boolean(b),
+            Expression::IntLiteral(int) => ResultObj::Borrow(Object::Int(int)),
+            Expression::BooleanLiteral(b) => ResultObj::Borrow(Object::Boolean(b)),
             Expression::Prefix { operator, right } => {
                 self.eval_prefix(operator, *right, env, root_context)
             }
@@ -164,24 +167,26 @@ impl Evaluator {
                 alternative,
             } => self.eval_if(*condition, consequence, alternative, env, root_context),
             Expression::Identifier(ident) => self.eval_identifier(ident, env),
-            Expression::FnLiteral { params, body } => Object::FnExpr {
+            Expression::FnLiteral { params, body } => ResultObj::Borrow(Object::FnExpr {
                 params,
                 body,
                 env: env.clone(),
-            },
+            }),
             Expression::Call {
                 function,
                 arguments,
             } => self.eval_call(*function, arguments, env, root_context),
-            Expression::Assignment { name, value } => self.set_var(name, *value, env, root_context),
-            Expression::StringLiteral(string) => Object::String(string),
+            Expression::Assignment { left, right } => {
+                self.set_var(*left, *right, env, root_context)
+            }
+            Expression::StringLiteral(string) => ResultObj::Borrow(Object::String(string)),
             Expression::ListLiteral { elements } => {
                 self.eval_list_literal(elements, env, root_context)
             }
-            Expression::Index { left, index } => {
-                self.eval_index_expression(*left, *index, env, root_context)
-            }
-            Expression::NullLiteral => Object::Null,
+            Expression::Index { left, index } => self
+                .eval_index_expression(*left, *index, None, env, root_context)
+                .clone(),
+            Expression::NullLiteral => ResultObj::Borrow(Object::Null),
             Expression::DictionaryLiteral { pairs } => {
                 self.eval_dictionary_expression(pairs, env, root_context)
             }
@@ -195,13 +200,13 @@ impl Evaluator {
         alternative: BlockStatement,
         env: &RcEnvironment,
         root_context: &Context,
-    ) -> Object {
+    ) -> ResultObj {
         let condition = self.eval_expression(condition, env, root_context);
         let condition_res = {
             match condition {
-                Object::Int(int) => int != 0,
-                Object::Boolean(b) => b,
-                Object::Null => false,
+                ResultObj::Borrow(Object::Int(int)) => int != 0,
+                ResultObj::Borrow(Object::Boolean(b)) => b,
+                ResultObj::Borrow(Object::Null) => false,
                 obj => {
                     return obj;
                 }
@@ -220,22 +225,24 @@ impl Evaluator {
         right: Expression,
         env: &RcEnvironment,
         root_context: &Context,
-    ) -> Object {
+    ) -> ResultObj {
         let right = self.eval_expression(right, env, root_context);
         match operator {
             Token::Plus => right,
             Token::Sub => match right {
-                Object::Int(int) => Object::Int(-int),
-                Object::Boolean(b) => Object::Int(-(b as i64)),
-                _ => Object::Null,
+                ResultObj::Borrow(Object::Int(int)) => ResultObj::Borrow(Object::Int(-int)),
+                ResultObj::Borrow(Object::Boolean(b)) => {
+                    ResultObj::Borrow(Object::Int(-(b as i64)))
+                }
+                _ => ResultObj::Borrow(Object::Null),
             },
             Token::Not => match right {
-                Object::Int(int) => Object::Boolean(int == 0),
-                Object::Boolean(b) => Object::Boolean(!b),
-                Object::Null => Object::Boolean(true),
-                _ => Object::Null,
+                ResultObj::Borrow(Object::Int(int)) => ResultObj::Borrow(Object::Boolean(int == 0)),
+                ResultObj::Borrow(Object::Boolean(b)) => ResultObj::Borrow(Object::Boolean(!b)),
+                ResultObj::Borrow(Object::Null) => ResultObj::Borrow(Object::Boolean(true)),
+                _ => ResultObj::Borrow(Object::Null),
             },
-            _ => Object::Null,
+            _ => ResultObj::Borrow(Object::Null),
         }
     }
 
@@ -246,104 +253,122 @@ impl Evaluator {
         right: Expression,
         env: &RcEnvironment,
         root_context: &Context,
-    ) -> Object {
+    ) -> ResultObj {
         let left = self.eval_expression(left, env, root_context);
         let right = self.eval_expression(right, env, root_context);
 
         match (left, right) {
-            (Object::Int(a), Object::Int(b)) => self.eval_infix_operation(a, b, operator),
-            (Object::Int(a), Object::Boolean(b)) => {
-                self.eval_infix_operation(a, b as i64, operator)
+            (ResultObj::Borrow(Object::Int(a)), ResultObj::Borrow(Object::Int(b))) => {
+                self.eval_infix_numeric_operation(a, b, operator)
             }
-            (Object::Boolean(a), Object::Int(b)) => {
-                self.eval_infix_operation(a as i64, b, operator)
+            (ResultObj::Borrow(Object::Int(a)), ResultObj::Borrow(Object::Boolean(b))) => {
+                self.eval_infix_numeric_operation(a, b as i64, operator)
             }
-            (Object::Boolean(a), Object::Boolean(b)) => {
-                self.eval_infix_operation(a as i64, b as i64, operator)
+            (ResultObj::Borrow(Object::Boolean(a)), ResultObj::Borrow(Object::Int(b))) => {
+                self.eval_infix_numeric_operation(a as i64, b, operator)
             }
-            (Object::String(a), Object::String(b)) => {
+            (ResultObj::Borrow(Object::Boolean(a)), ResultObj::Borrow(Object::Boolean(b))) => {
+                self.eval_infix_numeric_operation(a as i64, b as i64, operator)
+            }
+            (ResultObj::Borrow(Object::String(a)), ResultObj::Borrow(Object::String(b))) => {
                 self.eval_infix_string_operation(&a, &b, operator)
             }
-            (Object::String(a), Object::Int(b)) => {
+            (ResultObj::Borrow(Object::String(a)), ResultObj::Borrow(Object::Int(b))) => {
                 self.eval_infix_string_int_operation(&a, b, operator)
             }
-            (Object::Int(a), Object::String(b)) => {
+            (ResultObj::Borrow(Object::Int(a)), ResultObj::Borrow(Object::String(b))) => {
                 self.eval_infix_string_int_operation(&b, a, operator)
             }
-            (Object::List(a), Object::List(b)) => self.eval_infix_list_operation(&a, &b, operator),
-            (Object::Int(a), Object::List(b)) => {
-                self.eval_infix_list_int_operation(&b, a, operator)
-            }
-            (Object::List(a), Object::Int(b)) => {
-                self.eval_infix_list_int_operation(&a, b, operator)
-            }
-            (Object::Null, Object::Null) => self.eval_infix_null_operation(operator),
-            (Object::Null, _) => self.eval_infix_null_object_operation(operator),
-            (_, Object::Null) => self.eval_infix_null_object_operation(operator),
-            (Object::Error(msg), _) => Object::Error(msg),
-            (_, Object::Error(msg)) => Object::Error(msg),
-            (a, b) => Object::Error(format!(
-                "No se soporta operaciones {} {} {}",
-                a.get_type(),
-                operator,
-                b.get_type()
-            )),
-        }
-    }
-
-    fn eval_infix_operation(&self, a: i64, b: i64, op: Token) -> Object {
-        match op {
-            Token::Plus => Object::Int(a + b),
-            Token::Sub => Object::Int(a - b),
-            Token::Div => Object::Int(a / b),
-            Token::Mul => Object::Int(a * b),
-            Token::Eq => Object::Boolean(a == b),
-            Token::NotEq => Object::Boolean(a != b),
-            Token::Lt => Object::Boolean(a < b),
-            Token::Gt => Object::Boolean(a > b),
-            Token::LtEq => Object::Boolean(a <= b),
-            Token::GtEq => Object::Boolean(a >= b),
-            _ => Object::Null,
-        }
-    }
-
-    fn eval_infix_string_operation(&self, a: &String, b: &String, op: Token) -> Object {
-        match op {
-            Token::Plus => Object::String(format!("{}{}", a, b)),
-            Token::Eq => Object::Boolean(a == b),
-            Token::NotEq => Object::Boolean(a != b),
-            _ => Object::Null,
-        }
-    }
-
-    fn eval_infix_string_int_operation(&self, a: &str, b: i64, op: Token) -> Object {
-        match op {
-            Token::Mul => {
-                let mut string = String::new();
-                string.reserve(b as usize);
-                for _ in 0..b {
-                    string.push_str(a);
+            (ResultObj::Ref(a), ResultObj::Ref(b)) => match (&*a.borrow(), &*b.borrow()) {
+                (Object::List(ref a), Object::List(ref b)) => {
+                    self.eval_infix_list_operation(a, b, operator)
                 }
-                Object::String(string)
+                _ => panic!(""),
+            },
+            (ResultObj::Borrow(Object::Int(a)), ResultObj::Ref(b)) => match &*b.borrow() {
+                Object::List(b) => self.eval_infix_list_int_operation(b, a, operator),
+                _ => panic!(""),
+            },
+            (ResultObj::Ref(a), ResultObj::Borrow(Object::Int(b))) => match &*a.borrow() {
+                Object::List(a) => self.eval_infix_list_int_operation(a, b, operator),
+                _ => panic!(""),
+            },
+            (ResultObj::Borrow(Object::Null), ResultObj::Borrow(Object::Null)) => {
+                self.eval_infix_null_operation(operator)
             }
-            _ => Object::Null,
+            (ResultObj::Borrow(Object::Null), _) => self.eval_infix_null_object_operation(operator),
+            (_, ResultObj::Borrow(Object::Null)) => self.eval_infix_null_object_operation(operator),
+            (ResultObj::Borrow(Object::Error(msg)), _) => ResultObj::Borrow(Object::Error(msg)),
+            (_, ResultObj::Borrow(Object::Error(msg))) => ResultObj::Borrow(Object::Error(msg)),
+            (a, b) => ResultObj::Borrow(Object::Error(format!(
+                "No se soporta operaciones {} {} {}",
+                self.get_type(&a),
+                operator,
+                self.get_type(&b)
+            ))),
         }
     }
 
-    fn eval_infix_list_operation(&self, a: &Vec<Object>, b: &Vec<Object>, op: Token) -> Object {
+    fn get_type(&self, obj: &ResultObj) -> String {
+        match obj {
+            ResultObj::Borrow(obj) => obj.get_type().to_string(),
+            ResultObj::Ref(obj) => obj.borrow().get_type().to_string(),
+        }
+    }
+
+    fn eval_infix_numeric_operation(&self, a: i64, b: i64, op: Token) -> ResultObj {
         match op {
-            Token::Plus => Object::List([a.as_slice(), b.as_slice()].concat()),
-            Token::Eq => Object::Boolean(a == b),
-            Token::NotEq => Object::Boolean(a != b),
-            Token::Lt => Object::Boolean(a.len() < b.len()),
-            Token::Gt => Object::Boolean(a.len() > b.len()),
-            Token::LtEq => Object::Boolean(a.len() <= b.len()),
-            Token::GtEq => Object::Boolean(a.len() >= b.len()),
-            _ => Object::Null,
+            Token::Plus => ResultObj::Borrow(Object::Int(a + b)),
+            Token::Sub => ResultObj::Borrow(Object::Int(a - b)),
+            Token::Div => ResultObj::Borrow(Object::Int(a / b)),
+            Token::Mul => ResultObj::Borrow(Object::Int(a * b)),
+            Token::Eq => ResultObj::Borrow(Object::Boolean(a == b)),
+            Token::NotEq => ResultObj::Borrow(Object::Boolean(a != b)),
+            Token::Lt => ResultObj::Borrow(Object::Boolean(a < b)),
+            Token::Gt => ResultObj::Borrow(Object::Boolean(a > b)),
+            Token::LtEq => ResultObj::Borrow(Object::Boolean(a <= b)),
+            Token::GtEq => ResultObj::Borrow(Object::Boolean(a >= b)),
+            _ => ResultObj::Borrow(Object::Null),
         }
     }
 
-    fn eval_infix_list_int_operation(&self, a: &Vec<Object>, b: i64, op: Token) -> Object {
+    fn eval_infix_string_operation(&self, a: &String, b: &String, op: Token) -> ResultObj {
+        match op {
+            Token::Plus => ResultObj::Borrow(Object::String(format!("{}{}", a, b))),
+            Token::Eq => ResultObj::Borrow(Object::Boolean(a == b)),
+            Token::NotEq => ResultObj::Borrow(Object::Boolean(a != b)),
+            _ => ResultObj::Borrow(Object::Null),
+        }
+    }
+
+    fn eval_infix_string_int_operation(&self, a: &str, b: i64, op: Token) -> ResultObj {
+        match op {
+            Token::Mul => ResultObj::Borrow(Object::String(a.repeat(b as usize))),
+            _ => ResultObj::Borrow(Object::Null),
+        }
+    }
+
+    fn eval_infix_list_operation(
+        &self,
+        a: &Vec<ResultObj>,
+        b: &Vec<ResultObj>,
+        op: Token,
+    ) -> ResultObj {
+        match op {
+            Token::Plus => ResultObj::Ref(new_rc_object(Object::List(
+                [a.as_slice(), b.as_slice()].concat(),
+            ))),
+            Token::Eq => ResultObj::Borrow(Object::Boolean(a == b)),
+            Token::NotEq => ResultObj::Borrow(Object::Boolean(a != b)),
+            Token::Lt => ResultObj::Borrow(Object::Boolean(a.len() < b.len())),
+            Token::Gt => ResultObj::Borrow(Object::Boolean(a.len() > b.len())),
+            Token::LtEq => ResultObj::Borrow(Object::Boolean(a.len() <= b.len())),
+            Token::GtEq => ResultObj::Borrow(Object::Boolean(a.len() >= b.len())),
+            _ => ResultObj::Borrow(Object::Null),
+        }
+    }
+
+    fn eval_infix_list_int_operation(&self, a: &Vec<ResultObj>, b: i64, op: Token) -> ResultObj {
         match op {
             Token::Mul => {
                 let mut objs = Vec::new();
@@ -351,25 +376,25 @@ impl Evaluator {
                 for _ in 0..b {
                     objs.extend(a.to_owned());
                 }
-                Object::List(objs)
+                ResultObj::Ref(new_rc_object(Object::List(objs)))
             }
-            _ => Object::Null,
+            _ => ResultObj::Borrow(Object::Null),
         }
     }
 
-    fn eval_infix_null_operation(&self, operator: Token) -> Object {
+    fn eval_infix_null_operation(&self, operator: Token) -> ResultObj {
         match operator {
-            Token::Eq => Object::Boolean(true),
-            Token::NotEq => Object::Boolean(false),
-            _ => Object::Error("XD".to_owned()),
+            Token::Eq => ResultObj::Borrow(Object::Boolean(true)),
+            Token::NotEq => ResultObj::Borrow(Object::Boolean(false)),
+            _ => ResultObj::Borrow(Object::Error("XD".to_owned())),
         }
     }
 
-    fn eval_infix_null_object_operation(&self, operator: Token) -> Object {
+    fn eval_infix_null_object_operation(&self, operator: Token) -> ResultObj {
         match operator {
-            Token::Eq => Object::Boolean(false),
-            Token::NotEq => Object::Boolean(true),
-            _ => Object::Error("XD".to_owned()),
+            Token::Eq => ResultObj::Borrow(Object::Boolean(false)),
+            Token::NotEq => ResultObj::Borrow(Object::Boolean(true)),
+            _ => ResultObj::Borrow(Object::Error("XD".to_owned())),
         }
     }
 
@@ -379,82 +404,108 @@ impl Evaluator {
         value: Expression,
         env: &RcEnvironment,
         root_context: &Context,
-    ) -> Object {
-        if let Some(obj) = self.check_ident(&name, env) {
+    ) -> ResultObj {
+        if let Some(obj) = self.get_var_value(&name, env) {
             return obj;
         }
 
-        self.push_var(name, value, env, root_context)
+        self.insert_var(name, value, env, root_context)
     }
 
     fn set_var(
         &mut self,
-        name: String,
-        value: Expression,
+        left: Expression,
+        right: Expression,
         env: &RcEnvironment,
         root_context: &Context,
-    ) -> Object {
-        if self.check_ident(&name, env).is_none() {
-            return Object::Error(format!("El no existe referencias hacia `{}`", name));
-        }
+    ) -> ResultObj {
+        return match left {
+            Expression::Identifier(ident) => {
+                if !self.exist_var(&ident, env) {
+                    return ResultObj::Borrow(Object::Error(format!(
+                        "El no existe referencias hacia `{}`",
+                        ident
+                    )));
+                }
 
-        let obj = self.eval_expression(value, env, root_context);
-        let mut env_ref = RefCell::borrow_mut(env);
+                let obj = self.eval_expression(right, env, root_context);
+                let mut env_ref = RefCell::borrow_mut(env);
 
-        env_ref.update(name, obj.clone());
-        obj
+                env_ref.update(ident, obj.clone());
+                obj
+            }
+            Expression::Index { left, index } => {
+                let right_obj = self.eval_expression(right, env, root_context);
+                if self.is_error(&right_obj) {
+                    return right_obj;
+                }
+
+                self.eval_index_expression(*left, *index, Some(right_obj), env, root_context)
+            }
+            _ => ResultObj::Borrow(Object::Error(format!(
+                "No se puede realizar operaciones de asignacion a {}",
+                left
+            ))),
+        };
     }
 
-    fn check_ident(&self, name: &String, env: &RcEnvironment) -> Option<Object> {
+    fn get_var_value(&self, name: &String, env: &RcEnvironment) -> Option<ResultObj> {
         let env_ref = RefCell::borrow(env);
-
-        env_ref.get(name).map(|_| {
-            Object::Error(format!(
+        env_ref.get(name).map(|_| -> ResultObj {
+            ResultObj::Borrow(Object::Error(format!(
                 "El identificador `{}` ya habia sido declarado",
                 name
-            ))
+            )))
         })
     }
 
-    fn push_var(
+    fn exist_var(&self, name: &String, env: &RcEnvironment) -> bool {
+        let env_ref = RefCell::borrow(env);
+        env_ref.exist(name)
+    }
+
+    fn insert_var(
         &mut self,
         name: String,
         value: Expression,
         env: &RcEnvironment,
         root_context: &Context,
-    ) -> Object {
+    ) -> ResultObj {
         let obj = self.eval_expression(value, env, root_context);
         match obj {
-            Object::Error(msg) => {
-                return Object::Error(msg);
+            ResultObj::Borrow(Object::Error(msg)) => {
+                return ResultObj::Borrow(Object::Error(msg)); // Cosas de borrow...
             }
-            Object::Void => {
-                return Object::Error(
+            ResultObj::Borrow(Object::Void) => {
+                return ResultObj::Borrow(Object::Error(
                     "No se puede asignar el tipo de dato vacio a una variable".to_owned(),
-                );
+                ));
             }
             _ => {}
         }
-        self.push_obj(name, obj, env)
+        self.insert_obj(name, obj, env)
     }
 
-    fn push_obj(&mut self, name: String, obj: Object, env: &RcEnvironment) -> Object {
+    fn insert_obj(&mut self, name: String, obj: ResultObj, env: &RcEnvironment) -> ResultObj {
         let mut env_ref = RefCell::borrow_mut(env);
         env_ref.set(name, obj.clone());
         obj
     }
 
-    fn eval_identifier(&mut self, ident: String, env: &RcEnvironment) -> Object {
+    fn eval_identifier(&mut self, ident: String, env: &RcEnvironment) -> ResultObj {
         match env.borrow().get(&ident) {
-            Some(obj) => obj.clone(),
+            Some(obj) => obj,
             None => {
                 if let Some(func) = self.buildins_fn.get(&ident) {
-                    return Object::BuildinFn {
-                        name: ident.clone(),
-                        func: Box::new(func.clone()),
-                    };
+                    return ResultObj::Borrow(Object::BuildinFn {
+                        name: ident,
+                        func: func.clone_box(),
+                    });
                 }
-                Object::Error(format!("El identicador `{}` no existe.", ident))
+                ResultObj::Borrow(Object::Error(format!(
+                    "El identicador `{}` no existe.",
+                    ident
+                )))
             }
         }
     }
@@ -465,17 +516,19 @@ impl Evaluator {
         arguments: Vec<Expression>,
         env: &RcEnvironment,
         root_context: &Context,
-    ) -> Object {
+    ) -> ResultObj {
         let obj = self.eval_expression(function, env, root_context);
         match obj {
-            Object::FnExpr { params, body, env } => {
+            ResultObj::Borrow(Object::FnExpr { params, body, env }) => {
                 self.eval_fn_expr(arguments, params, body, &env, root_context)
             }
-            Object::Fn {
+            ResultObj::Borrow(Object::Fn {
                 params, body, env, ..
-            } => self.eval_fn_expr(arguments, params, body, &env, root_context),
-            Object::BuildinFn { func, .. } => func(self, arguments, env, root_context),
-            _ => Object::Error("XD".to_owned()),
+            }) => self.eval_fn_expr(arguments, params, body, &env, root_context),
+            ResultObj::Borrow(Object::BuildinFn { func, .. }) => {
+                func(self, arguments, env, root_context)
+            }
+            _ => ResultObj::Borrow(Object::Error("XD".to_owned())),
         }
 
         // match returned_obj {
@@ -492,18 +545,18 @@ impl Evaluator {
         body: BlockStatement,
         env: &RcEnvironment,
         root_context: &Context,
-    ) -> Object {
+    ) -> ResultObj {
         let scope_env = Rc::new(RefCell::new(Environment::new(Some(env.clone()))));
         if arguments.len() != params.len() {
-            return Object::Error(format!(
+            return ResultObj::Borrow(Object::Error(format!(
                 "Se encontro {} argumentos, de los {}.",
                 arguments.len(),
                 params.len()
-            ));
+            )));
         }
         for (arg, param) in arguments.iter().zip(params) {
             if let Expression::Identifier(param_name) = param {
-                self.push_var(param_name, arg.to_owned(), &scope_env, root_context);
+                self.insert_var(param_name, arg.to_owned(), &scope_env, root_context);
             }
         }
         self.eval_block_statement(body, &scope_env, root_context)
@@ -512,9 +565,9 @@ impl Evaluator {
     fn eval_list_literal(
         &mut self,
         elements: Vec<Expression>,
-        env: &Rc<RefCell<Environment>>,
+        env: &RcEnvironment,
         root_context: &Context,
-    ) -> Object {
+    ) -> ResultObj {
         let mut objs = Vec::new();
         for expr in elements {
             let obj = self.eval_expression(expr, env, root_context);
@@ -523,42 +576,65 @@ impl Evaluator {
             }
             objs.push(obj);
         }
-        Object::List(objs)
+        ResultObj::Ref(new_rc_object(Object::List(objs)))
     }
 
     fn eval_index_expression(
         &mut self,
         left: Expression,
         index: Expression,
-        env: &Rc<RefCell<Environment>>,
+        new_value: Option<ResultObj>,
+        env: &RcEnvironment,
         root_context: &Context,
-    ) -> Object {
+    ) -> ResultObj {
         let left_obj = self.eval_expression(left, env, root_context);
         match left_obj {
-            Object::Error(_) => left_obj,
-            Object::List(objs) => {
-                if let Expression::IntLiteral(index) = index {
-                    return match objs.get(index as usize) {
-                        Some(obj) => obj.clone(),
-                        None => Object::Null,
-                    };
-                }
-                Object::Error("El operador de indexar solo opera con enteros".to_owned())
-            }
-            Object::Dictionary { ref pairs } => match pairs.get(&self.eval_expression(index.clone(), env, root_context)) {
-                Some(obj) => obj.clone(),
-                None => Object::Error(format!("Llave invalida {}", index)),
+            ResultObj::Borrow(obj) => match obj {
+                Object::Error(msg) => ResultObj::Borrow(Object::Error(msg)),
+                _ => ResultObj::Borrow(Object::Error(
+                    "Solo se puede usar el operador de indexar en listas".to_owned(),
+                )),
             },
-            _ => Object::Error("Solo se puede usar el operador de indexar en listas".to_owned()),
+            ResultObj::Ref(obj) => match *obj.borrow_mut() {
+                Object::List(ref mut objs) => {
+                    if let Expression::IntLiteral(index) = index {
+                        if let Some(new_value) = new_value {
+                            if (index as usize) < objs.len() {
+                                objs[index as usize] = new_value.clone();
+                                return new_value;
+                            }
+                            return ResultObj::Borrow(Object::Null);
+                        }
+                        return match objs.get(index as usize) {
+                            Some(obj) => obj.clone(),
+                            None => ResultObj::Borrow(Object::Null),
+                        };
+                    }
+                    ResultObj::Borrow(Object::Error(
+                        "El operador de indexar solo opera con enteros".to_owned(),
+                    ))
+                }
+                Object::Dictionary(ref pairs) => {
+                    match pairs.get(&self.eval_expression(index.clone(), env, root_context)) {
+                        Some(obj) => obj.clone(),
+                        None => {
+                            ResultObj::Borrow(Object::Error(format!("Llave invalida {}", index)))
+                        }
+                    }
+                }
+                _ => ResultObj::Borrow(Object::Error(
+                    "Solo se puede usar el operador de indexar en listas".to_owned(),
+                )),
+            },
         }
     }
 
     fn eval_dictionary_expression(
         &mut self,
         expr_pairs: HashMap<Expression, Expression>,
-        env: &Rc<RefCell<Environment>>,
+        env: &RcEnvironment,
         root_context: &Context,
-    ) -> Object {
+    ) -> ResultObj {
         let mut pairs = HashMap::new();
         for (k, v) in expr_pairs {
             let obj_key = self.eval_expression(k, env, root_context);
@@ -571,11 +647,11 @@ impl Evaluator {
             }
             pairs.insert(obj_key, obj_value);
         }
-        Object::Dictionary { pairs }
+        ResultObj::Ref(new_rc_object(Object::Dictionary(pairs)))
     }
 
-    fn is_error(&mut self, obj: &Object) -> bool {
-        if let Object::Error(_) = obj {
+    fn is_error(&mut self, obj: &ResultObj) -> bool {
+        if let ResultObj::Borrow(Object::Error(_)) = obj {
             return true;
         }
         false

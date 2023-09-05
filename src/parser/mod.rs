@@ -234,8 +234,6 @@ impl<'a> Parser<'a> {
             return Ok(Expression::Identifier(ident));
         }
 
-        let name = ident;
-
         self.next_token();
         self.next_token();
 
@@ -251,8 +249,8 @@ impl<'a> Parser<'a> {
         }
 
         Ok(Expression::Assignment {
-            name,
-            value: Box::new(expr),
+            left: Box::new(Expression::Identifier(ident)),
+            right: Box::new(expr),
         })
     }
 
@@ -527,6 +525,23 @@ impl<'a> Parser<'a> {
 
         if !self.expected_peek(&Token::RBracket) {
             return Err(ParserError::MissingRightBracket);
+        }
+
+        if self.peek_token_is(&Token::Assign) {
+            self.next_token();
+            self.next_token();
+
+            let right = self.parse_expression(Precedence::Lowest)?;
+            if !self.expected_peek(&Token::SemiColon) {
+                return Err(ParserError::MissingSemiColon);
+            }
+            return Ok(Expression::Assignment {
+                left: Box::new(Expression::Index {
+                    left: Box::new(left),
+                    index: Box::new(index),
+                }),
+                right: Box::new(right),
+            });
         }
 
         Ok(Expression::Index {

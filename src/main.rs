@@ -13,7 +13,7 @@ use clap::{Arg, Command};
 use console::Term;
 use evaluator::Evaluator;
 use lexer::Lexer;
-use objects::Object;
+use objects::{Object, ResultObj};
 use parser::Parser;
 use repl::repl;
 use std::{fs, io::Error};
@@ -60,7 +60,7 @@ fn main() -> Result<(), Error> {
                 return Ok(());
             }
             let program = parser.parse_program();
-            if let Object::Error(msg) = evaluator.eval_program(program) {
+            if let ResultObj::Borrow(Object::Error(msg)) = evaluator.eval_program(program) {
                 println!("{}", msg);
                 return Ok(());
             }
@@ -68,6 +68,5 @@ fn main() -> Result<(), Error> {
         return Ok(());
     }
 
-    clearscreen::clear().expect("Ok, esto no lo deberias ver. En tal caso, debes estar corriendo un OS que no es windows o basado en unix/linux");
     repl(term)
 }

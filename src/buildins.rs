@@ -2,12 +2,12 @@ use crate::{
     ast::expressions::FnParams,
     environment::RcEnvironment,
     evaluator::{Context, Evaluator},
-    objects::Object,
+    objects::{Object, ResultObj},
     promp_theme::Tema,
 };
 
 pub trait BuildinFnPointer:
-    Fn(&mut Evaluator, FnParams, &RcEnvironment, &Context) -> Object
+    Fn(&mut Evaluator, FnParams, &RcEnvironment, &Context) -> ResultObj
 {
     fn clone_box<'a>(&self) -> Box<dyn 'a + BuildinFnPointer>
     where
@@ -16,7 +16,7 @@ pub trait BuildinFnPointer:
 
 impl<F> BuildinFnPointer for F
 where
-    F: Fn(&mut Evaluator, FnParams, &RcEnvironment, &Context) -> Object + Clone,
+    F: Fn(&mut Evaluator, FnParams, &RcEnvironment, &Context) -> ResultObj + Clone,
 {
     fn clone_box<'a>(&self) -> Box<dyn 'a + BuildinFnPointer>
     where
@@ -38,18 +38,34 @@ pub fn buildin_longitud_fn(
     args: FnParams,
     env: &RcEnvironment,
     root_context: &Context,
-) -> Object {
+) -> ResultObj {
     if args.len() != 1 {
-        return Object::Error(format!("Se encontro {} argumentos de 1", args.len()));
+        return ResultObj::Borrow(Object::Error(format!(
+            "Se encontro {} argumentos de 1",
+            args.len()
+        )));
     }
     let arg_obj = eval.eval_expression(args.get(0).unwrap().clone(), env, root_context);
     match arg_obj {
-        Object::String(string) => Object::Int(string.len() as i64),
-        Object::List(objs) => Object::Int(objs.len() as i64),
-        obj => Object::Error(format!(
-            "Se espera un tipo de dato cadena, no {}",
-            obj.get_type()
-        )),
+        // obj => Object::Error(format!(
+        //     "Se espera un tipo de dato cadena, no {}",
+        //     obj.get_type()
+        // )),
+        ResultObj::Borrow(obj) => match obj {
+            Object::String(string) => ResultObj::Borrow(Object::Int(string.len() as i64)),
+            obj => ResultObj::Borrow(Object::Error(format!(
+                "Se espera un tipo de dato cadena, no {}",
+                obj.get_type()
+            ))),
+        },
+        ResultObj::Ref(obj) => match &*obj.borrow() {
+            Object::List(objs) => ResultObj::Borrow(Object::Int(objs.len() as i64)),
+            Object::Dictionary(pairs) => ResultObj::Borrow(Object::Int(pairs.len() as i64)),
+            obj => ResultObj::Borrow(Object::Error(format!(
+                "Se espera un tipo de dato cadena, no {}",
+                obj.get_type()
+            ))),
+        },
     }
 }
 
@@ -59,7 +75,7 @@ pub fn buildin_imprimir_fn(
     args: FnParams,
     env: &RcEnvironment,
     root_context: &Context,
-) -> Object {
+) -> ResultObj {
     if !args.is_empty() {
         let objs = args
             .iter()
@@ -71,10 +87,10 @@ pub fn buildin_imprimir_fn(
             .collect::<Vec<_>>()
             .join("");
         println!("{}", string);
-        return Object::Void;
+        return ResultObj::Borrow(Object::Void);
     }
     println!();
-    Object::Void
+    ResultObj::Borrow(Object::Void)
 }
 
 // Funcion que retorna el tipo de dato del objeto
@@ -83,12 +99,20 @@ pub fn buildin_tipo_fn(
     args: FnParams,
     env: &RcEnvironment,
     root_context: &Context,
-) -> Object {
+) -> ResultObj {
     if args.len() != 1 {
-        return Object::Error(format!("Se encontro {} argumentos de 1", args.len()));
+        return ResultObj::Borrow(Object::Error(format!(
+            "Se encontro {} argumentos de 1",
+            args.len()
+        )));
     }
     let arg_obj = eval.eval_expression(args.get(0).unwrap().clone(), env, root_context);
-    Object::String(arg_obj.get_type().to_owned())
+    match arg_obj {
+        ResultObj::Borrow(obj) => ResultObj::Borrow(Object::String(obj.get_type().to_owned())),
+        ResultObj::Ref(obj) => {
+            ResultObj::Borrow(Object::String(obj.borrow().get_type().to_owned()))
+        }
+    }
 }
 
 // Funcion que permite un input desde el terminal
@@ -97,30 +121,62 @@ pub fn buildin_leer_fn(
     args: FnParams,
     env: &RcEnvironment,
     root_context: &Context,
-) -> Object {
+) -> ResultObj {
     match args.len() {
         0 => {
             let output: String = dialoguer::Input::with_theme(&Tema {})
                 .allow_empty(true)
                 .interact_text()
                 .unwrap();
-            Object::String(output)
+            ResultObj::Borrow(Object::String(output))
         }
         1 => {
             let arg_obj = eval.eval_expression(args.get(0).unwrap().clone(), env, root_context);
-            if let Object::String(promp) = arg_obj {
-                let output: String = dialoguer::Input::with_theme(&Tema {})
-                    .with_prompt(promp)
-                    .allow_empty(true)
-                    .interact_text()
-                    .unwrap();
-                return Object::String(output);
-            }
-            Object::Error(format!(
-                "Se espera un tipo de dato cadena, no {}",
-                arg_obj.get_type()
-            ))
+            return match arg_obj {
+                ResultObj::Borrow(obj) => match obj {
+                    Object::String(promp) => {
+                        let output: String = dialoguer::Input::with_theme(&Tema {})
+                            .with_prompt(promp)
+                            .allow_empty(true)
+                            .interact_text()
+                            .unwrap();
+                        return ResultObj::Borrow(Object::String(output));
+                    }
+                    _ => ResultObj::Borrow(Object::Error(format!(
+                        "Se espera un tipo de dato cadena, no {}",
+                        obj.get_type()
+                    ))),
+                },
+                ResultObj::Ref(obj) => ResultObj::Borrow(Object::Error(format!(
+                    "Se espera un tipo de dato cadena, no {}",
+                    obj.borrow().get_type()
+                ))),
+            };
         }
-        _ => Object::Error(format!("Se encontro {} argumentos de 1", args.len())),
+        _ => ResultObj::Borrow(Object::Error(format!(
+            "Se encontro {} argumentos de 1",
+            args.len()
+        ))),
+    }
+}
+
+pub fn buildin_cadena_fn(
+    eval: &mut Evaluator,
+    args: FnParams,
+    env: &RcEnvironment,
+    root_context: &Context,
+) -> ResultObj {
+    if args.len() != 1 {
+        return ResultObj::Borrow(Object::Error(format!(
+            "Se encontro {} argumentos de 1",
+            args.len()
+        )));
+    }
+    let arg_obj = eval.eval_expression(args.get(0).unwrap().clone(), env, root_context);
+    match arg_obj {
+        ResultObj::Borrow(obj) => ResultObj::Borrow(Object::String(obj.to_string())),
+        ResultObj::Ref(obj) => {
+            ResultObj::Borrow(Object::String(obj.borrow().to_string()))
+        }
     }
 }

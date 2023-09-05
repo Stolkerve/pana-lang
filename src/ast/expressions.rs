@@ -44,8 +44,8 @@ pub enum Expression {
         arguments: FnParams,
     },
     Assignment {
-        name: String,
-        value: Box<Expression>,
+        left: Box<Expression>,
+        right: Box<Expression>,
     },
 }
 
@@ -136,7 +136,7 @@ impl Display for Expression {
                 function,
                 arguments,
             } => write!(f, "{}({})", function, format_arguments(arguments)),
-            Expression::Assignment { name, value } => write!(f, "{} = {};", name, *value),
+            Expression::Assignment { left, right } => write!(f, "{} = {};", *left, *right),
             Expression::StringLiteral(string) => write!(f, "\"{}\"", string),
             Expression::ListLiteral { elements } => write!(f, "[{}]", format_arguments(elements)),
             Expression::Index { left, index } => write!(f, "{}[{}]", *left, *index),

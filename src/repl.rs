@@ -1,10 +1,15 @@
 use crate::{
-    evaluator::Evaluator, lexer::Lexer, objects::Object, parser::Parser, promp_theme::Tema,
+    evaluator::Evaluator,
+    lexer::Lexer,
+    objects::{Object, ResultObj},
+    parser::Parser,
+    promp_theme::Tema,
     PANA_MIGUEL_ASCII,
 };
 use std::{collections::VecDeque, io::Error};
 
 pub fn repl(term: console::Term) -> Result<(), Error> {
+    clearscreen::clear().expect("Ok, esto no lo deberias ver. En tal caso, debes estar corriendo un OS que no es windows o basado en unix/linux");
     term.write_line(&format!(
         "{}",
         console::style("¡Bienvenido al lenguaje de programacion Pana!").bold()
@@ -27,7 +32,7 @@ pub fn repl(term: console::Term) -> Result<(), Error> {
             .unwrap();
 
         if line == "limpiar" {
-            term.clear_screen()?;
+            clearscreen::clear().expect("Ok, esto no lo deberias ver. En tal caso, debes estar corriendo un OS que no es windows o basado en unix/linux");
             continue;
         } else if line == "salir" {
             std::process::exit(0);
@@ -55,8 +60,14 @@ pub fn repl(term: console::Term) -> Result<(), Error> {
             continue;
         }
         match evaluator.eval_program(program) {
-            Object::Void => {}
-            obj => {
+            ResultObj::Borrow(obj) => match obj {
+                Object::Void => {}
+                obj => {
+                    term.write_line(&format!("{}", obj))?;
+                }
+            },
+            ResultObj::Ref(obj) => {
+                let obj = &*obj.borrow();
                 term.write_line(&format!("{}", obj))?;
             }
         }
