@@ -1,10 +1,12 @@
-use std::{fmt::Display, ops::{Neg, Add, Sub, Mul, Div}};
-
+use std::{
+    fmt::Display,
+    ops::{Add, Div, Mul, Neg, Sub},
+};
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum Numeric {
     Int(i64), // dependiendo del build, tendras: 32 o 64 bits de numero entero
-    Float(f64)
+    Float(f64),
 }
 
 impl Neg for Numeric {
@@ -23,10 +25,10 @@ impl Add for Numeric {
 
     fn add(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Numeric::Int(a), Numeric::Int(b))      => Numeric::Int(a           + b),
-            (Numeric::Int(a), Numeric::Float(b))    => Numeric::Float(a as f64  + b),
-            (Numeric::Float(a), Numeric::Int(b))    => Numeric::Float(a         + b as f64),
-            (Numeric::Float(a), Numeric::Float(b))  => Numeric::Float(a         + b),
+            (Numeric::Int(a), Numeric::Int(b)) => Numeric::Int(a + b),
+            (Numeric::Int(a), Numeric::Float(b)) => Numeric::Float(a as f64 + b),
+            (Numeric::Float(a), Numeric::Int(b)) => Numeric::Float(a + b as f64),
+            (Numeric::Float(a), Numeric::Float(b)) => Numeric::Float(a + b),
         }
     }
 }
@@ -36,10 +38,10 @@ impl Sub for Numeric {
 
     fn sub(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Numeric::Int(a), Numeric::Int(b))      => Numeric::Int(a           - b),
-            (Numeric::Int(a), Numeric::Float(b))    => Numeric::Float(a as f64  - b),
-            (Numeric::Float(a), Numeric::Int(b))    => Numeric::Float(a         - b as f64),
-            (Numeric::Float(a), Numeric::Float(b))  => Numeric::Float(a         - b),
+            (Numeric::Int(a), Numeric::Int(b)) => Numeric::Int(a - b),
+            (Numeric::Int(a), Numeric::Float(b)) => Numeric::Float(a as f64 - b),
+            (Numeric::Float(a), Numeric::Int(b)) => Numeric::Float(a - b as f64),
+            (Numeric::Float(a), Numeric::Float(b)) => Numeric::Float(a - b),
         }
     }
 }
@@ -49,10 +51,10 @@ impl Mul for Numeric {
 
     fn mul(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Numeric::Int(a), Numeric::Int(b))      => Numeric::Int(a           * b),
-            (Numeric::Int(a), Numeric::Float(b))    => Numeric::Float(a as f64  * b),
-            (Numeric::Float(a), Numeric::Int(b))    => Numeric::Float(a         * b as f64),
-            (Numeric::Float(a), Numeric::Float(b))  => Numeric::Float(a         * b),
+            (Numeric::Int(a), Numeric::Int(b)) => Numeric::Int(a * b),
+            (Numeric::Int(a), Numeric::Float(b)) => Numeric::Float(a as f64 * b),
+            (Numeric::Float(a), Numeric::Int(b)) => Numeric::Float(a * b as f64),
+            (Numeric::Float(a), Numeric::Float(b)) => Numeric::Float(a * b),
         }
     }
 }
@@ -62,10 +64,10 @@ impl Div for Numeric {
 
     fn div(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Numeric::Int(a), Numeric::Int(b))      => Numeric::Int(a           / b),
-            (Numeric::Int(a), Numeric::Float(b))    => Numeric::Float(a as f64  / b),
-            (Numeric::Float(a), Numeric::Int(b))    => Numeric::Float(a         / b as f64),
-            (Numeric::Float(a), Numeric::Float(b))  => Numeric::Float(a         / b),
+            (Numeric::Int(a), Numeric::Int(b)) => Numeric::Int(a / b),
+            (Numeric::Int(a), Numeric::Float(b)) => Numeric::Float(a as f64 / b),
+            (Numeric::Float(a), Numeric::Int(b)) => Numeric::Float(a / b as f64),
+            (Numeric::Float(a), Numeric::Float(b)) => Numeric::Float(a / b),
         }
     }
 }

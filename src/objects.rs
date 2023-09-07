@@ -6,7 +6,8 @@ use crate::{
         statements::BlockStatement,
     },
     buildins::BuildinFnPointer,
-    environment::Environment, types::Numeric,
+    environment::Environment,
+    types::Numeric,
 };
 
 pub type RcObject = Rc<RefCell<Object>>;

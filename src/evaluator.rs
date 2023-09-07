@@ -7,12 +7,13 @@ use crate::{
         Program,
     },
     buildins::{
-        buildin_imprimir_fn, buildin_leer_fn, buildin_longitud_fn, buildin_tipo_fn,
-        BuildinFnPointer, buildin_cadena_fn,
+        buildin_cadena_fn, buildin_imprimir_fn, buildin_leer_fn, buildin_longitud_fn,
+        buildin_tipo_fn, BuildinFnPointer,
     },
     environment::{Environment, RcEnvironment},
     objects::{new_rc_object, Object, ResultObj},
-    token::Token, types::Numeric,
+    token::Token,
+    types::Numeric,
 };
 
 #[derive(PartialEq, Clone, Debug)]
@@ -230,14 +231,18 @@ impl Evaluator {
         match operator {
             Token::Plus => right,
             Token::Sub => match right {
-                ResultObj::Borrow(Object::Numeric(numeric)) => ResultObj::Borrow(Object::Numeric(-numeric)),
+                ResultObj::Borrow(Object::Numeric(numeric)) => {
+                    ResultObj::Borrow(Object::Numeric(-numeric))
+                }
                 ResultObj::Borrow(Object::Boolean(b)) => {
                     ResultObj::Borrow(Object::Numeric(Numeric::Int(-(b as i64))))
                 }
                 _ => ResultObj::Borrow(Object::Null),
             },
             Token::Not => match right {
-                ResultObj::Borrow(Object::Numeric(int)) => ResultObj::Borrow(Object::Boolean(int == Numeric::Int(0))),
+                ResultObj::Borrow(Object::Numeric(int)) => {
+                    ResultObj::Borrow(Object::Boolean(int == Numeric::Int(0)))
+                }
                 ResultObj::Borrow(Object::Boolean(b)) => ResultObj::Borrow(Object::Boolean(!b)),
                 ResultObj::Borrow(Object::Null) => ResultObj::Borrow(Object::Boolean(true)),
                 _ => ResultObj::Borrow(Object::Null),
@@ -267,9 +272,12 @@ impl Evaluator {
             (ResultObj::Borrow(Object::Boolean(a)), ResultObj::Borrow(Object::Numeric(b))) => {
                 self.eval_infix_numeric_operation(Numeric::Int(a as i64), b, operator)
             }
-            (ResultObj::Borrow(Object::Boolean(a)), ResultObj::Borrow(Object::Boolean(b))) => {
-                self.eval_infix_numeric_operation(Numeric::Int(a as i64), Numeric::Int(b as i64), operator)
-            }
+            (ResultObj::Borrow(Object::Boolean(a)), ResultObj::Borrow(Object::Boolean(b))) => self
+                .eval_infix_numeric_operation(
+                    Numeric::Int(a as i64),
+                    Numeric::Int(b as i64),
+                    operator,
+                ),
             (ResultObj::Borrow(Object::String(a)), ResultObj::Borrow(Object::String(b))) => {
                 self.eval_infix_string_operation(&a, &b, operator)
             }
@@ -346,9 +354,11 @@ impl Evaluator {
             return match op {
                 Token::Mul => ResultObj::Borrow(Object::String(a.repeat(int as usize))),
                 _ => ResultObj::Borrow(Object::Null),
-            }
+            };
         }
-        ResultObj::Borrow(Object::Error("No se puede hacer operaciones de indexacion con numeros flotantes".to_owned()))
+        ResultObj::Borrow(Object::Error(
+            "No se puede hacer operaciones de indexacion con numeros flotantes".to_owned(),
+        ))
     }
 
     fn eval_infix_list_operation(
@@ -371,7 +381,12 @@ impl Evaluator {
         }
     }
 
-    fn eval_infix_list_int_operation(&self, a: &Vec<ResultObj>, b: Numeric, op: Token) -> ResultObj {
+    fn eval_infix_list_int_operation(
+        &self,
+        a: &Vec<ResultObj>,
+        b: Numeric,
+        op: Token,
+    ) -> ResultObj {
         if let Numeric::Int(int) = b {
             match op {
                 Token::Mul => {
@@ -385,7 +400,9 @@ impl Evaluator {
                 _ => ResultObj::Borrow(Object::Null),
             };
         }
-        ResultObj::Borrow(Object::Error("No se puede hacer operaciones con numeros flotantes en listas".to_owned()))
+        ResultObj::Borrow(Object::Error(
+            "No se puede hacer operaciones con numeros flotantes en listas".to_owned(),
+        ))
     }
 
     fn eval_infix_null_operation(&self, operator: Token) -> ResultObj {

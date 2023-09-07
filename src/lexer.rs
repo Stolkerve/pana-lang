@@ -2,13 +2,16 @@ use std::{iter::Peekable, str::CharIndices};
 
 use regex::Regex;
 
-use crate::{token::{keywords_to_tokens, Token}, types::Numeric};
+use crate::{
+    token::{keywords_to_tokens, Token},
+    types::Numeric,
+};
 
 pub struct Lexer<'a> {
     pub input: &'a str,
     pub iter: Peekable<CharIndices<'a>>,
     pub line: usize,
-    identifier_regex: Regex
+    identifier_regex: Regex,
 }
 
 #[derive(PartialEq)]
@@ -17,7 +20,7 @@ enum NumericType {
     Floats,
     Hexadecimal,
     Octadecimal,
-    Binary
+    Binary,
 }
 
 fn check_numeric(state: &NumericType, c: char) -> bool {
@@ -48,7 +51,8 @@ impl<'a> Lexer<'a> {
             input,
             iter: input.char_indices().peekable(),
             line: 1,
-            identifier_regex: Regex::new("^[a-zA-Z_][a-zA-Z0-9_]*$").expect("No compilo el regex de los identificadores")
+            identifier_regex: Regex::new("^[a-zA-Z_][a-zA-Z0-9_]*$")
+                .expect("No compilo el regex de los identificadores"),
         }
     }
 
@@ -75,12 +79,15 @@ impl<'a> Lexer<'a> {
         if self.identifier_regex.is_match(ident) {
             return keywords_to_tokens(ident);
         }
-        Token::IllegalMsg(format!("El formato del identificador {} es erroneo, debe ser snake case. Ejemplo: hola_mundo.", ident))
+        Token::IllegalMsg(format!(
+            "El formato del identificador {} es erroneo, debe ser snake case. Ejemplo: hola_mundo.",
+            ident
+        ))
     }
 
-        // 0b0101100
-        // 0o320
-        // 0xFF
+    // 0b0101100
+    // 0o320
+    // 0xFF
     fn read_number(&mut self, token: (usize, char)) -> Token {
         let start = token.0;
         let mut end = start + 1;
@@ -89,17 +96,23 @@ impl<'a> Lexer<'a> {
         if let Some((_, c)) = self.peek_char() {
             let c = *c;
             if c == 'b' || c == 'o' || c == 'x' {
-                state = if c == 'b' { NumericType::Binary } else if c == 'o' {NumericType::Octadecimal} else {NumericType::Hexadecimal};
+                state = if c == 'b' {
+                    NumericType::Binary
+                } else if c == 'o' {
+                    NumericType::Octadecimal
+                } else {
+                    NumericType::Hexadecimal
+                };
                 self.read_char();
                 end += 1;
-            }
-            else if c == '.' {
+            } else if c == '.' {
                 state = NumericType::Floats;
                 self.read_char();
                 end += 1;
-            }
-            else if is_identifier(c) {
-                return Token::IllegalMsg("Ningun identificador puede empezar con un numero".to_owned());
+            } else if is_identifier(c) {
+                return Token::IllegalMsg(
+                    "Ningun identificador puede empezar con un numero".to_owned(),
+                );
             }
         }
 
@@ -126,11 +139,21 @@ impl<'a> Lexer<'a> {
         }
 
         match state {
-            NumericType::Integers => Token::Numeric(Numeric::Int(self.input[start..end].parse().unwrap())),
-            NumericType::Floats => Token::Numeric(Numeric::Float(self.input[start..end].parse::<f64>().unwrap())),
-            NumericType::Hexadecimal => Token::Numeric(Numeric::Int(i64::from_str_radix(self.input[start..end].trim_start_matches("0x"), 16).unwrap())),
-            NumericType::Octadecimal => Token::Numeric(Numeric::Int(i64::from_str_radix(self.input[start..end].trim_start_matches("0o"), 8).unwrap())),
-            NumericType::Binary => Token::Numeric(Numeric::Int(i64::from_str_radix(self.input[start..end].trim_start_matches("0b"), 2).unwrap())),
+            NumericType::Integers => {
+                Token::Numeric(Numeric::Int(self.input[start..end].parse().unwrap()))
+            }
+            NumericType::Floats => Token::Numeric(Numeric::Float(
+                self.input[start..end].parse::<f64>().unwrap(),
+            )),
+            NumericType::Hexadecimal => Token::Numeric(Numeric::Int(
+                i64::from_str_radix(self.input[start..end].trim_start_matches("0x"), 16).unwrap(),
+            )),
+            NumericType::Octadecimal => Token::Numeric(Numeric::Int(
+                i64::from_str_radix(self.input[start..end].trim_start_matches("0o"), 8).unwrap(),
+            )),
+            NumericType::Binary => Token::Numeric(Numeric::Int(
+                i64::from_str_radix(self.input[start..end].trim_start_matches("0b"), 2).unwrap(),
+            )),
         }
 
         // Token::Numeric(self.input[start..end].parse().unwrap())

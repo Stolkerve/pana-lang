@@ -3,7 +3,8 @@ use crate::{
     environment::RcEnvironment,
     evaluator::{Context, Evaluator},
     objects::{Object, ResultObj},
-    promp_theme::Tema, types::Numeric,
+    promp_theme::Tema,
+    types::Numeric,
 };
 
 pub trait BuildinFnPointer:
@@ -52,15 +53,21 @@ pub fn buildin_longitud_fn(
         //     obj.get_type()
         // )),
         ResultObj::Borrow(obj) => match obj {
-            Object::String(string) => ResultObj::Borrow(Object::Numeric(Numeric::Int(string.len() as i64))),
+            Object::String(string) => {
+                ResultObj::Borrow(Object::Numeric(Numeric::Int(string.len() as i64)))
+            }
             obj => ResultObj::Borrow(Object::Error(format!(
                 "Se espera un tipo de dato cadena, no {}",
                 obj.get_type()
             ))),
         },
         ResultObj::Ref(obj) => match &*obj.borrow() {
-            Object::List(objs) => ResultObj::Borrow(Object::Numeric(Numeric::Int(objs.len() as i64))),
-            Object::Dictionary(pairs) => ResultObj::Borrow(Object::Numeric(Numeric::Int(pairs.len() as i64))),
+            Object::List(objs) => {
+                ResultObj::Borrow(Object::Numeric(Numeric::Int(objs.len() as i64)))
+            }
+            Object::Dictionary(pairs) => {
+                ResultObj::Borrow(Object::Numeric(Numeric::Int(pairs.len() as i64)))
+            }
             obj => ResultObj::Borrow(Object::Error(format!(
                 "Se espera un tipo de dato cadena, no {}",
                 obj.get_type()
@@ -175,8 +182,6 @@ pub fn buildin_cadena_fn(
     let arg_obj = eval.eval_expression(args.get(0).unwrap().clone(), env, root_context);
     match arg_obj {
         ResultObj::Borrow(obj) => ResultObj::Borrow(Object::String(obj.to_string())),
-        ResultObj::Ref(obj) => {
-            ResultObj::Borrow(Object::String(obj.borrow().to_string()))
-        }
+        ResultObj::Ref(obj) => ResultObj::Borrow(Object::String(obj.borrow().to_string())),
     }
 }
