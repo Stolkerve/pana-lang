@@ -6,7 +6,7 @@ use crate::{
         statements::BlockStatement,
     },
     buildins::BuildinFnPointer,
-    environment::Environment,
+    environment::Environment, types::Numeric,
 };
 
 pub type RcObject = Rc<RefCell<Object>>;
@@ -16,7 +16,7 @@ pub fn new_rc_object(obj: Object) -> RcObject {
 
 #[derive(Clone)]
 pub enum Object {
-    Int(i64),
+    Numeric(Numeric),
     Boolean(bool),
     Error(String),
     String(String),
@@ -42,18 +42,12 @@ pub enum Object {
     Null,
 }
 
-impl std::hash::Hash for Object {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        core::mem::discriminant(self).hash(state);
-    }
-}
-
 impl Eq for Object {}
 
 impl PartialEq for Object {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Int(l0), Self::Int(r0)) => l0 == r0,
+            (Self::Numeric(l0), Self::Numeric(r0)) => l0 == r0,
             (Self::Boolean(l0), Self::Boolean(r0)) => l0 == r0,
             (Self::Error(l0), Self::Error(r0)) => l0 == r0,
             (Self::String(l0), Self::String(r0)) => l0 == r0,
@@ -72,7 +66,7 @@ impl PartialEq for Object {
 impl Object {
     pub fn get_type(&self) -> &str {
         match self {
-            Object::Int(_) => "numerico",
+            Object::Numeric(_) => "numerico",
             Object::Boolean(_) => "logico",
             Object::Error(_) => "error",
             Object::String(_) => "cadena",
@@ -91,7 +85,7 @@ impl Object {
 impl Display for Object {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Object::Int(int) => write!(f, "{}", int),
+            Object::Numeric(int) => write!(f, "{}", int),
             Object::Boolean(b) => write!(f, "{}", bool_to_spanish(*b)),
             Object::Null => write!(f, "nulo"),
             Object::Error(msg) => write!(f, "{}", msg),

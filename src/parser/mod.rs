@@ -142,7 +142,7 @@ impl<'a> Parser<'a> {
             match &self.current_token {
                 // Literals values
                 Token::Ident(ident) => self.parse_identifier(ident.clone()),
-                Token::Int(int) => Ok(Expression::IntLiteral(*int)),
+                Token::Numeric(numeric) => Ok(Expression::NumericLiteral(numeric.to_owned())),
                 Token::True => Ok(Expression::BooleanLiteral(true)),
                 Token::False => Ok(Expression::BooleanLiteral(false)),
                 Token::String(string) => Ok(Expression::StringLiteral(string.to_string())),
@@ -159,6 +159,7 @@ impl<'a> Parser<'a> {
                 // Contitions
                 Token::If => self.parse_if_expression(),
                 Token::Func => self.parse_fn_literal(),
+                Token::IllegalMsg(msg) => Err(ParserError::IllegalMsg(msg.to_owned())),
                 token => Err(ParserError::Illegal(token.clone())),
             }
         };

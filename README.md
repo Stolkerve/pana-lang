@@ -71,7 +71,10 @@ var a = ""; |Ahora digo que hace esta variable, nada.
 # Tipo de datos
 ```
 | Numerico
-var a = 12;
+var a = 15 + 0b1111 | -> 30;
+a = 0xffff | -> 255
+a = 0o10 | -> 8
+a = 0.2231 | -> Lo mismo
 
 | Logico
 var b = verdad;
@@ -169,22 +172,21 @@ cadena(10) | -> "10"
 
 ### Version 0.2
 - ⬜️ Mejora en los mensajes de error con columna y linea
-### Version 0.2.1
 - ⬜️ Cambiar el tipo de dato entero a numerico
-### Version 0.2.2
-- ⬜️ Leer los strings dentro del parser y no el lexer
+<!-- - ⬜️ Leer los strings dentro del parser y no el lexer -->
 
 ### Version 0.3
 - ⬜ bucle for range: para i en rango(10).
 - ⬜ bucle while: mientras i < 10.
 - ⬜ Keyword break: romper.
+- ⬜ Keyword continue: continuar.
 
 ### Version 0.4
 - ⬜ Operador de acceso de miembros: **.**
 - ⬜ Acceso a funciones miembro de los tipos de datos:
     - ⬜ lista: agregar(), eliminar(), buscar(), concatenar(), indice(), insertar(), separar(), invertir(), ordenar(), limpiar(), vacio().
     - ⬜ diccionario: eliminar(), llaves(), valores(), limpiar().
-    - ⬜ cadena: caracteres(), concatenar(), buscar(), eliminar(), es_alfa, es_numerico, inicia_con(), insertat(), invertir(), mayusculas(), minusculas(), reemplazar(), recortar(), separar(), subcadena(), vacio().
+    - ⬜ cadena: caracteres(), concatenar(), buscar(), eliminar(), es_alfa(), es_numerico(), inicia_con(), insertat(), invertir(), mayusculas(), minusculas(), reemplazar(), recortar(), separar(), subcadena(), vacio().
 
 ### Version 0.5
 - ⬜ Soporte para la sintaxis de modulos.

@@ -8,6 +8,7 @@ mod parser;
 mod promp_theme;
 mod repl;
 mod token;
+mod types;
 
 use clap::{Arg, Command};
 use console::Term;
@@ -30,40 +31,36 @@ fn main() -> Result<(), Error> {
 
     let term = Term::stdout();
 
-    if let Some(archivo) = matches.get_one::<String>("archivo") {
-        if archivo == "pana" {
+    if let Some(file_path) = matches.get_one::<String>("archivo") {
+        if file_path == "pana" {
             term.write_line(PANA_MIGUEL_ASCII)?;
             return Ok(());
         }
 
         let mut evaluator = Evaluator::new();
-        for line in fs::read_to_string(archivo)
-            .unwrap_or_else(|_| panic!("No es encotro el archivo {}", archivo))
-            .lines()
-        {
-            let lexer = Lexer::new(line);
-            let mut parser = Parser::new(lexer);
+        let file_str = fs::read_to_string(file_path).expect(&format!("No es encotro el archivo {}", file_path));
+        let lexer = Lexer::new(&file_str);
+        let mut parser = Parser::new(lexer);
 
-            if !parser.errors.is_empty() {
-                term.write_line(&format!(
-                    "{}",
-                    console::style(
-                        parser
-                            .errors
-                            .iter()
-                            .map(|e| e.to_string())
-                            .collect::<Vec<_>>()
-                            .join(", ")
-                    )
-                    .red()
-                ))?;
-                return Ok(());
-            }
-            let program = parser.parse_program();
-            if let ResultObj::Borrow(Object::Error(msg)) = evaluator.eval_program(program) {
-                println!("{}", msg);
-                return Ok(());
-            }
+        if !parser.errors.is_empty() {
+            term.write_line(&format!(
+                "{}",
+                console::style(
+                    parser
+                        .errors
+                        .iter()
+                        .map(|e| e.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+                .red()
+            ))?;
+            return Ok(());
+        }
+        let program = parser.parse_program();
+        if let ResultObj::Borrow(Object::Error(msg)) = evaluator.eval_program(program) {
+            println!("{}", msg);
+            return Ok(());
         }
         return Ok(());
     }

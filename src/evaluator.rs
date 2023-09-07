@@ -12,7 +12,7 @@ use crate::{
     },
     environment::{Environment, RcEnvironment},
     objects::{new_rc_object, Object, ResultObj},
-    token::Token,
+    token::Token, types::Numeric,
 };
 
 #[derive(PartialEq, Clone, Debug)]
@@ -151,7 +151,7 @@ impl Evaluator {
         root_context: &Context,
     ) -> ResultObj {
         match expr {
-            Expression::IntLiteral(int) => ResultObj::Borrow(Object::Int(int)),
+            Expression::NumericLiteral(numeric) => ResultObj::Borrow(Object::Numeric(numeric)),
             Expression::BooleanLiteral(b) => ResultObj::Borrow(Object::Boolean(b)),
             Expression::Prefix { operator, right } => {
                 self.eval_prefix(operator, *right, env, root_context)
@@ -204,7 +204,7 @@ impl Evaluator {
         let condition = self.eval_expression(condition, env, root_context);
         let condition_res = {
             match condition {
-                ResultObj::Borrow(Object::Int(int)) => int != 0,
+                ResultObj::Borrow(Object::Numeric(numeric)) => numeric != Numeric::Int(0),
                 ResultObj::Borrow(Object::Boolean(b)) => b,
                 ResultObj::Borrow(Object::Null) => false,
                 obj => {
@@ -230,14 +230,14 @@ impl Evaluator {
         match operator {
             Token::Plus => right,
             Token::Sub => match right {
-                ResultObj::Borrow(Object::Int(int)) => ResultObj::Borrow(Object::Int(-int)),
+                ResultObj::Borrow(Object::Numeric(numeric)) => ResultObj::Borrow(Object::Numeric(-numeric)),
                 ResultObj::Borrow(Object::Boolean(b)) => {
-                    ResultObj::Borrow(Object::Int(-(b as i64)))
+                    ResultObj::Borrow(Object::Numeric(Numeric::Int(-(b as i64))))
                 }
                 _ => ResultObj::Borrow(Object::Null),
             },
             Token::Not => match right {
-                ResultObj::Borrow(Object::Int(int)) => ResultObj::Borrow(Object::Boolean(int == 0)),
+                ResultObj::Borrow(Object::Numeric(int)) => ResultObj::Borrow(Object::Boolean(int == Numeric::Int(0))),
                 ResultObj::Borrow(Object::Boolean(b)) => ResultObj::Borrow(Object::Boolean(!b)),
                 ResultObj::Borrow(Object::Null) => ResultObj::Borrow(Object::Boolean(true)),
                 _ => ResultObj::Borrow(Object::Null),
@@ -258,25 +258,25 @@ impl Evaluator {
         let right = self.eval_expression(right, env, root_context);
 
         match (left, right) {
-            (ResultObj::Borrow(Object::Int(a)), ResultObj::Borrow(Object::Int(b))) => {
+            (ResultObj::Borrow(Object::Numeric(a)), ResultObj::Borrow(Object::Numeric(b))) => {
                 self.eval_infix_numeric_operation(a, b, operator)
             }
-            (ResultObj::Borrow(Object::Int(a)), ResultObj::Borrow(Object::Boolean(b))) => {
-                self.eval_infix_numeric_operation(a, b as i64, operator)
+            (ResultObj::Borrow(Object::Numeric(a)), ResultObj::Borrow(Object::Boolean(b))) => {
+                self.eval_infix_numeric_operation(a, Numeric::Int(b as i64), operator)
             }
-            (ResultObj::Borrow(Object::Boolean(a)), ResultObj::Borrow(Object::Int(b))) => {
-                self.eval_infix_numeric_operation(a as i64, b, operator)
+            (ResultObj::Borrow(Object::Boolean(a)), ResultObj::Borrow(Object::Numeric(b))) => {
+                self.eval_infix_numeric_operation(Numeric::Int(a as i64), b, operator)
             }
             (ResultObj::Borrow(Object::Boolean(a)), ResultObj::Borrow(Object::Boolean(b))) => {
-                self.eval_infix_numeric_operation(a as i64, b as i64, operator)
+                self.eval_infix_numeric_operation(Numeric::Int(a as i64), Numeric::Int(b as i64), operator)
             }
             (ResultObj::Borrow(Object::String(a)), ResultObj::Borrow(Object::String(b))) => {
                 self.eval_infix_string_operation(&a, &b, operator)
             }
-            (ResultObj::Borrow(Object::String(a)), ResultObj::Borrow(Object::Int(b))) => {
+            (ResultObj::Borrow(Object::String(a)), ResultObj::Borrow(Object::Numeric(b))) => {
                 self.eval_infix_string_int_operation(&a, b, operator)
             }
-            (ResultObj::Borrow(Object::Int(a)), ResultObj::Borrow(Object::String(b))) => {
+            (ResultObj::Borrow(Object::Numeric(a)), ResultObj::Borrow(Object::String(b))) => {
                 self.eval_infix_string_int_operation(&b, a, operator)
             }
             (ResultObj::Ref(a), ResultObj::Ref(b)) => match (&*a.borrow(), &*b.borrow()) {
@@ -285,11 +285,11 @@ impl Evaluator {
                 }
                 _ => panic!(""),
             },
-            (ResultObj::Borrow(Object::Int(a)), ResultObj::Ref(b)) => match &*b.borrow() {
+            (ResultObj::Borrow(Object::Numeric(a)), ResultObj::Ref(b)) => match &*b.borrow() {
                 Object::List(b) => self.eval_infix_list_int_operation(b, a, operator),
                 _ => panic!(""),
             },
-            (ResultObj::Ref(a), ResultObj::Borrow(Object::Int(b))) => match &*a.borrow() {
+            (ResultObj::Ref(a), ResultObj::Borrow(Object::Numeric(b))) => match &*a.borrow() {
                 Object::List(a) => self.eval_infix_list_int_operation(a, b, operator),
                 _ => panic!(""),
             },
@@ -316,12 +316,12 @@ impl Evaluator {
         }
     }
 
-    fn eval_infix_numeric_operation(&self, a: i64, b: i64, op: Token) -> ResultObj {
+    fn eval_infix_numeric_operation(&self, a: Numeric, b: Numeric, op: Token) -> ResultObj {
         match op {
-            Token::Plus => ResultObj::Borrow(Object::Int(a + b)),
-            Token::Sub => ResultObj::Borrow(Object::Int(a - b)),
-            Token::Div => ResultObj::Borrow(Object::Int(a / b)),
-            Token::Mul => ResultObj::Borrow(Object::Int(a * b)),
+            Token::Plus => ResultObj::Borrow(Object::Numeric(a + b)),
+            Token::Sub => ResultObj::Borrow(Object::Numeric(a - b)),
+            Token::Div => ResultObj::Borrow(Object::Numeric(a / b)),
+            Token::Mul => ResultObj::Borrow(Object::Numeric(a * b)),
             Token::Eq => ResultObj::Borrow(Object::Boolean(a == b)),
             Token::NotEq => ResultObj::Borrow(Object::Boolean(a != b)),
             Token::Lt => ResultObj::Borrow(Object::Boolean(a < b)),
@@ -341,11 +341,14 @@ impl Evaluator {
         }
     }
 
-    fn eval_infix_string_int_operation(&self, a: &str, b: i64, op: Token) -> ResultObj {
-        match op {
-            Token::Mul => ResultObj::Borrow(Object::String(a.repeat(b as usize))),
-            _ => ResultObj::Borrow(Object::Null),
+    fn eval_infix_string_int_operation(&self, a: &str, b: Numeric, op: Token) -> ResultObj {
+        if let Numeric::Int(int) = b {
+            return match op {
+                Token::Mul => ResultObj::Borrow(Object::String(a.repeat(int as usize))),
+                _ => ResultObj::Borrow(Object::Null),
+            }
         }
+        ResultObj::Borrow(Object::Error("No se puede hacer operaciones de indexacion con numeros flotantes".to_owned()))
     }
 
     fn eval_infix_list_operation(
@@ -368,18 +371,21 @@ impl Evaluator {
         }
     }
 
-    fn eval_infix_list_int_operation(&self, a: &Vec<ResultObj>, b: i64, op: Token) -> ResultObj {
-        match op {
-            Token::Mul => {
-                let mut objs = Vec::new();
-                objs.reserve(b as usize);
-                for _ in 0..b {
-                    objs.extend(a.to_owned());
+    fn eval_infix_list_int_operation(&self, a: &Vec<ResultObj>, b: Numeric, op: Token) -> ResultObj {
+        if let Numeric::Int(int) = b {
+            match op {
+                Token::Mul => {
+                    let mut objs = Vec::new();
+                    objs.reserve(int as usize);
+                    for _ in 0..int {
+                        objs.extend(a.to_owned());
+                    }
+                    ResultObj::Ref(new_rc_object(Object::List(objs)))
                 }
-                ResultObj::Ref(new_rc_object(Object::List(objs)))
-            }
-            _ => ResultObj::Borrow(Object::Null),
+                _ => ResultObj::Borrow(Object::Null),
+            };
         }
+        ResultObj::Borrow(Object::Error("No se puede hacer operaciones con numeros flotantes en listas".to_owned()))
     }
 
     fn eval_infix_null_operation(&self, operator: Token) -> ResultObj {
@@ -597,7 +603,7 @@ impl Evaluator {
             },
             ResultObj::Ref(obj) => match *obj.borrow_mut() {
                 Object::List(ref mut objs) => {
-                    if let Expression::IntLiteral(index) = index {
+                    if let Expression::NumericLiteral(Numeric::Int(index)) = index {
                         if let Some(new_value) = new_value {
                             if (index as usize) < objs.len() {
                                 objs[index as usize] = new_value.clone();

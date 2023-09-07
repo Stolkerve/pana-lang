@@ -1,14 +1,17 @@
 use std::fmt::Display;
 
-#[derive(PartialEq, Clone, Debug, Eq, Hash)]
+use crate::types::Numeric;
+
+#[derive(PartialEq, Clone, Debug)]
 pub enum Token {
     Illegal(char),
+    IllegalMsg(String),
     Eof,
     CommentLine,
 
     // Identifiers, literals
     Ident(String),
-    Int(i64),
+    Numeric(Numeric),
     String(String),
 
     // Operators
@@ -68,7 +71,7 @@ impl Display for Token {
             Token::Illegal(char) => write!(f, "{}", char),
             Token::Eof => write!(f, "EOF"),
             Token::Ident(ident) => write!(f, "{}", ident),
-            Token::Int(int) => write!(f, "{}", int),
+            Token::Numeric(int) => write!(f, "{}", int),
             Token::Assign => write!(f, "="),
             Token::Comma => write!(f, ","),
             Token::SemiColon => write!(f, ";"),
@@ -87,6 +90,7 @@ impl Display for Token {
             Token::Null => write!(f, "nulo"),
             Token::CommentLine => write!(f, "|"),
             Token::Colon => write!(f, ":"),
+            Token::IllegalMsg(msg) => write!(f, "{}", msg),
         }
     }
 }

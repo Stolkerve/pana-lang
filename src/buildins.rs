@@ -3,7 +3,7 @@ use crate::{
     environment::RcEnvironment,
     evaluator::{Context, Evaluator},
     objects::{Object, ResultObj},
-    promp_theme::Tema,
+    promp_theme::Tema, types::Numeric,
 };
 
 pub trait BuildinFnPointer:
@@ -52,15 +52,15 @@ pub fn buildin_longitud_fn(
         //     obj.get_type()
         // )),
         ResultObj::Borrow(obj) => match obj {
-            Object::String(string) => ResultObj::Borrow(Object::Int(string.len() as i64)),
+            Object::String(string) => ResultObj::Borrow(Object::Numeric(Numeric::Int(string.len() as i64))),
             obj => ResultObj::Borrow(Object::Error(format!(
                 "Se espera un tipo de dato cadena, no {}",
                 obj.get_type()
             ))),
         },
         ResultObj::Ref(obj) => match &*obj.borrow() {
-            Object::List(objs) => ResultObj::Borrow(Object::Int(objs.len() as i64)),
-            Object::Dictionary(pairs) => ResultObj::Borrow(Object::Int(pairs.len() as i64)),
+            Object::List(objs) => ResultObj::Borrow(Object::Numeric(Numeric::Int(objs.len() as i64))),
+            Object::Dictionary(pairs) => ResultObj::Borrow(Object::Numeric(Numeric::Int(pairs.len() as i64))),
             obj => ResultObj::Borrow(Object::Error(format!(
                 "Se espera un tipo de dato cadena, no {}",
                 obj.get_type()

@@ -1,10 +1,33 @@
 use std::{iter::Peekable, str::CharIndices};
 
-use crate::token::{keywords_to_tokens, Token};
+use regex::Regex;
+
+use crate::{token::{keywords_to_tokens, Token}, types::Numeric};
 
 pub struct Lexer<'a> {
     pub input: &'a str,
     pub iter: Peekable<CharIndices<'a>>,
+    pub line: usize,
+    identifier_regex: Regex
+}
+
+#[derive(PartialEq)]
+enum NumericType {
+    Integers,
+    Floats,
+    Hexadecimal,
+    Octadecimal,
+    Binary
+}
+
+fn check_numeric(state: &NumericType, c: char) -> bool {
+    match state {
+        NumericType::Integers => c.is_ascii_digit(),
+        NumericType::Floats => c.is_ascii_digit(),
+        NumericType::Hexadecimal => c.is_ascii_hexdigit(),
+        NumericType::Octadecimal => c as u16 >= 48 && c as u16 <= 55,
+        NumericType::Binary => c == '0' || c == '1',
+    }
 }
 
 impl<'a> Iterator for Lexer<'a> {
@@ -24,6 +47,8 @@ impl<'a> Lexer<'a> {
         Self {
             input,
             iter: input.char_indices().peekable(),
+            line: 1,
+            identifier_regex: Regex::new("^[a-zA-Z_][a-zA-Z0-9_]*$").expect("No compilo el regex de los identificadores")
         }
     }
 
@@ -35,34 +60,80 @@ impl<'a> Lexer<'a> {
         self.iter.peek()
     }
 
-    fn read_identifier(&mut self, token: (usize, char)) -> &'a str {
+    fn read_identifier(&mut self, token: (usize, char)) -> Token {
         let start = token.0;
         let mut end = start + 1;
         while self
             .peek_char()
-            .map_or_else(|| false, |(_, char)| is_alphabetic(*char))
+            .map_or_else(|| false, |(_, char)| is_identifier(*char))
         {
             self.read_char();
             end += 1;
         }
-        // Regex "([^0-9]\w*)_(\w*)"gm
-        // Para snake case
-        &self.input[start..end]
+
+        let ident = &self.input[start..end];
+        if self.identifier_regex.is_match(ident) {
+            return keywords_to_tokens(ident);
+        }
+        Token::IllegalMsg(format!("El formato del identificador {} es erroneo, debe ser snake case. Ejemplo: hola_mundo.", ident))
     }
 
-    fn read_number(&mut self, token: (usize, char)) -> &'a str {
+        // 0b0101100
+        // 0o320
+        // 0xFF
+    fn read_number(&mut self, token: (usize, char)) -> Token {
         let start = token.0;
         let mut end = start + 1;
+        let mut state = NumericType::Integers;
 
-        while self
-            .peek_char()
-            .map_or_else(|| false, |(_, char)| char.is_numeric())
-        {
+        if let Some((_, c)) = self.peek_char() {
+            let c = *c;
+            if c == 'b' || c == 'o' || c == 'x' {
+                state = if c == 'b' { NumericType::Binary } else if c == 'o' {NumericType::Octadecimal} else {NumericType::Hexadecimal};
+                self.read_char();
+                end += 1;
+            }
+            else if c == '.' {
+                state = NumericType::Floats;
+                self.read_char();
+                end += 1;
+            }
+            else if is_identifier(c) {
+                return Token::IllegalMsg("Ningun identificador puede empezar con un numero".to_owned());
+            }
+        }
+
+        while let Some((_, c)) = self.peek_char() {
+            let c = *c;
+            if !c.is_ascii_digit() && !c.is_ascii_hexdigit() {
+                if c == '.' {
+                    if state == NumericType::Floats {
+                        return Token::Illegal(c);
+                    }
+                    state = NumericType::Floats;
+                    self.read_char();
+                    end += 1;
+                    continue;
+                }
+                break;
+            }
+
+            if !check_numeric(&state, c) {
+                return Token::Illegal(c); // Pensar en un mejor mensaje
+            }
             self.read_char();
             end += 1;
         }
 
-        &self.input[start..end]
+        match state {
+            NumericType::Integers => Token::Numeric(Numeric::Int(self.input[start..end].parse().unwrap())),
+            NumericType::Floats => Token::Numeric(Numeric::Float(self.input[start..end].parse::<f64>().unwrap())),
+            NumericType::Hexadecimal => Token::Numeric(Numeric::Int(i64::from_str_radix(self.input[start..end].trim_start_matches("0x"), 16).unwrap())),
+            NumericType::Octadecimal => Token::Numeric(Numeric::Int(i64::from_str_radix(self.input[start..end].trim_start_matches("0o"), 8).unwrap())),
+            NumericType::Binary => Token::Numeric(Numeric::Int(i64::from_str_radix(self.input[start..end].trim_start_matches("0b"), 2).unwrap())),
+        }
+
+        // Token::Numeric(self.input[start..end].parse().unwrap())
     }
 
     fn read_2chars_token(
@@ -89,17 +160,20 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn read_string(&mut self, start: usize) -> String {
+    fn read_string(&mut self, start: usize) -> Token {
         let mut end = start + 1;
 
         while let Some((_, c)) = self.read_char() {
-            if c == '"' || c == '\0' {
+            if c == '"' {
                 break;
             }
             end += 1;
         }
+        if self.peek_char().is_none() {
+            return Token::IllegalMsg("Falta el simbolo `\"` para delimitar la cadena".to_string());
+        }
 
-        self.input[start + 1..end].to_owned()
+        Token::String(self.input[start + 1..end].to_owned())
     }
 
     fn read_to_end(&mut self) -> Token {
@@ -132,13 +206,13 @@ impl<'a> Lexer<'a> {
             Some((_, '.')) => Token::Dot,
             Some((_, '|')) => self.read_to_end(),
             Some((_, ':')) => Token::Colon,
-            Some((index, '"')) => Token::String(self.read_string(index)),
+            Some((index, '"')) => self.read_string(index),
             Some((index, char)) => {
-                if is_alphabetic(char) {
+                if is_identifier(char) {
                     let identifier = self.read_identifier((index, char));
-                    return keywords_to_tokens(identifier);
-                } else if char.is_numeric() {
-                    return Token::Int(self.read_number((index, char)).parse().unwrap());
+                    return identifier;
+                } else if char.is_ascii_digit() {
+                    return self.read_number((index, char));
                 }
 
                 Token::Illegal(char)
@@ -148,6 +222,6 @@ impl<'a> Lexer<'a> {
     }
 }
 
-fn is_alphabetic(c: char) -> bool {
+fn is_identifier(c: char) -> bool {
     c.is_alphabetic() || c == '_'
 }

@@ -1,13 +1,13 @@
 use std::{collections::HashMap, fmt::Display};
 
-use crate::{ast::statements::BlockStatement, token::Token};
+use crate::{ast::statements::BlockStatement, token::Token, types::Numeric};
 
 pub type FnParams = Vec<Expression>;
 
 #[derive(Debug, Clone)]
 pub enum Expression {
     Identifier(String),
-    IntLiteral(i64),
+    NumericLiteral(Numeric),
     BooleanLiteral(bool),
     StringLiteral(String),
     NullLiteral,
@@ -61,7 +61,7 @@ impl PartialEq for Expression {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Identifier(l0), Self::Identifier(r0)) => l0 == r0,
-            (Self::IntLiteral(l0), Self::IntLiteral(r0)) => l0 == r0,
+            (Self::NumericLiteral(l0), Self::NumericLiteral(r0)) => l0 == r0,
             (Self::BooleanLiteral(l0), Self::BooleanLiteral(r0)) => l0 == r0,
             (Self::StringLiteral(l0), Self::StringLiteral(r0)) => l0 == r0,
             (Self::FnLiteral { .. }, Self::FnLiteral { .. }) => {
@@ -120,7 +120,7 @@ impl Display for Expression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Expression::Identifier(ident) => write!(f, "{}", ident),
-            Expression::IntLiteral(int) => write!(f, "{}", int),
+            Expression::NumericLiteral(int) => write!(f, "{}", int),
             Expression::Prefix { operator, right } => write!(f, "{}{}", operator, right),
             Expression::Infix {
                 left,
