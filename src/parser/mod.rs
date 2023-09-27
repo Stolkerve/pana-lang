@@ -33,9 +33,9 @@ enum Precedence {
 fn to_tokens_precedence(token: &TokenType) -> Precedence {
     match token {
         TokenType::Plus => Precedence::SumSub,
-        TokenType::Sub => Precedence::SumSub,
-        TokenType::Div => Precedence::ProductDiv,
-        TokenType::Mul => Precedence::ProductDiv,
+        TokenType::Minus => Precedence::SumSub,
+        TokenType::Slash => Precedence::ProductDiv,
+        TokenType::Asterisk => Precedence::ProductDiv,
         TokenType::Eq => Precedence::Equals,
         TokenType::NotEq => Precedence::Equals,
         TokenType::Lt => Precedence::LessGreater,
@@ -353,9 +353,9 @@ impl Parser {
                 TokenType::Null => Ok(Expression::new(ExprType::NullLiteral, self.current_token.line, self.current_token.col)),
 
                 // Prefix
-                TokenType::Not => self.parse_prefix_expression(),
+                TokenType::Bang => self.parse_prefix_expression(),
                 TokenType::Plus => self.parse_prefix_expression(),
-                TokenType::Sub => self.parse_prefix_expression(),
+                TokenType::Minus => self.parse_prefix_expression(),
                 TokenType::LParen => self.parse_grouped_expression(),
                 TokenType::LBracket => self.parse_array_literal(),
                 TokenType::LBrace => self.parse_dictionary_literal(),
@@ -383,15 +383,15 @@ impl Parser {
                         self.next_token();
                         left_expr = self.parse_infix_expression(left_expr.unwrap());
                     }
-                    TokenType::Sub => {
+                    TokenType::Minus => {
                         self.next_token();
                         left_expr = self.parse_infix_expression(left_expr.unwrap());
                     }
-                    TokenType::Mul => {
+                    TokenType::Asterisk => {
                         self.next_token();
                         left_expr = self.parse_infix_expression(left_expr.unwrap());
                     }
-                    TokenType::Div => {
+                    TokenType::Slash => {
                         self.next_token();
                         left_expr = self.parse_infix_expression(left_expr.unwrap());
                     }

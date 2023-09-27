@@ -197,7 +197,7 @@ impl Evaluator {
         let right = self.eval_expression(right, env);
         match operator {
             TokenType::Plus => right,
-            TokenType::Sub => match right {
+            TokenType::Minus => match right {
                 ResultObj::Borrow(Object::Numeric(numeric)) => {
                     ResultObj::Borrow(Object::Numeric(-numeric))
                 }
@@ -206,7 +206,7 @@ impl Evaluator {
                 }
                 _ => ResultObj::Borrow(Object::Null),
             },
-            TokenType::Not => match right {
+            TokenType::Bang => match right {
                 ResultObj::Borrow(Object::Numeric(int)) => {
                     ResultObj::Borrow(Object::Boolean(int == Numeric::Int(0)))
                 }
@@ -333,9 +333,9 @@ impl Evaluator {
     fn eval_infix_numeric_operation(&self, a: Numeric, b: Numeric, op: TokenType) -> ResultObj {
         match op {
             TokenType::Plus => ResultObj::Borrow(Object::Numeric(a + b)),
-            TokenType::Sub => ResultObj::Borrow(Object::Numeric(a - b)),
-            TokenType::Div => ResultObj::Borrow(Object::Numeric(a / b)),
-            TokenType::Mul => ResultObj::Borrow(Object::Numeric(a * b)),
+            TokenType::Minus => ResultObj::Borrow(Object::Numeric(a - b)),
+            TokenType::Slash => ResultObj::Borrow(Object::Numeric(a / b)),
+            TokenType::Asterisk => ResultObj::Borrow(Object::Numeric(a * b)),
             TokenType::Eq => ResultObj::Borrow(Object::Boolean(a == b)),
             TokenType::NotEq => ResultObj::Borrow(Object::Boolean(a != b)),
             TokenType::Lt => ResultObj::Borrow(Object::Boolean(a < b)),
@@ -358,7 +358,7 @@ impl Evaluator {
     fn eval_infix_string_int_operation(&self, a: &str, b: Numeric, op: TokenType) -> ResultObj {
         if let Numeric::Int(int) = b {
             return match op {
-                TokenType::Mul => ResultObj::Borrow(Object::String(a.repeat(int as usize))),
+                TokenType::Asterisk => ResultObj::Borrow(Object::String(a.repeat(int as usize))),
                 _ => ResultObj::Borrow(Object::Null),
             };
         }
@@ -395,7 +395,7 @@ impl Evaluator {
     ) -> ResultObj {
         if let Numeric::Int(int) = b {
             match op {
-                TokenType::Mul => {
+                TokenType::Asterisk => {
                     let mut objs = Vec::new();
                     objs.reserve(int as usize);
                     for _ in 0..int {

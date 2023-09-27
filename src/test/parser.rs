@@ -117,15 +117,15 @@
 //             right: Box::new(Expression::NumericLiteral(Numeric::Int(10))),
 //         },
 //         Expression::Prefix {
-//             operator: TokenType::Sub,
+//             operator: TokenType::Minus,
 //             right: Box::new(Expression::NumericLiteral(Numeric::Int(93))),
 //         },
 //         Expression::Prefix {
-//             operator: TokenType::Sub,
+//             operator: TokenType::Minus,
 //             right: Box::new(Expression::NumericLiteral(Numeric::Float(23.45))),
 //         },
 //         Expression::Prefix {
-//             operator: TokenType::Not,
+//             operator: TokenType::Bang,
 //             right: Box::new(Expression::BooleanLiteral(false)),
 //         },
 //     ];
@@ -228,22 +228,22 @@
 //         Expression::Infix {
 //             left: Box::new(Expression::NumericLiteral(Numeric::Int(2))),
 //             right: Box::new(Expression::NumericLiteral(Numeric::Int(4))),
-//             operator: TokenType::Sub,
+//             operator: TokenType::Minus,
 //         },
 //         Expression::Infix {
 //             left: Box::new(Expression::NumericLiteral(Numeric::Int(4))),
 //             right: Box::new(Expression::NumericLiteral(Numeric::Int(4))),
-//             operator: TokenType::Mul,
+//             operator: TokenType::Asterisk,
 //         },
 //         Expression::Infix {
 //             left: Box::new(Expression::NumericLiteral(Numeric::Int(2))),
 //             right: Box::new(Expression::NumericLiteral(Numeric::Int(2))),
-//             operator: TokenType::Div,
+//             operator: TokenType::Slash,
 //         },
 //         Expression::Infix {
 //             left: Box::new(Expression::BooleanLiteral(true)),
 //             right: Box::new(Expression::NumericLiteral(Numeric::Int(1))),
-//             operator: TokenType::Sub,
+//             operator: TokenType::Minus,
 //         },
 //         Expression::Infix {
 //             left: Box::new(Expression::Infix {
@@ -272,7 +272,7 @@
 //         Expression::Infix {
 //             left: Box::new(Expression::StringLiteral("hola".to_owned())),
 //             right: Box::new(Expression::NumericLiteral(Numeric::Int(2))),
-//             operator: TokenType::Mul,
+//             operator: TokenType::Asterisk,
 //         },
 //         Expression::Infix {
 //             left: Box::new(Expression::ListLiteral {
@@ -282,7 +282,7 @@
 //                 ],
 //             }),
 //             right: Box::new(Expression::NumericLiteral(Numeric::Int(2))),
-//             operator: TokenType::Mul,
+//             operator: TokenType::Asterisk,
 //         },
 //     ];
 
@@ -315,7 +315,7 @@
 //             value: Expression::Infix {
 //                 left: Box::new(Expression::Identifier("hola_mundo".to_owned())),
 //                 right: Box::new(Expression::Identifier("numero".to_owned())),
-//                 operator: TokenType::Mul,
+//                 operator: TokenType::Asterisk,
 //             },
 //         },
 //     ];
