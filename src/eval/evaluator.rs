@@ -202,7 +202,7 @@ impl Evaluator {
                     ResultObj::Copy(Object::Numeric(-numeric))
                 }
                 ResultObj::Copy(Object::Boolean(b)) => {
-                    ResultObj::Copy(Object::Numeric(Numeric::Int(-(b as i128))))
+                    ResultObj::Copy(Object::Numeric(Numeric::Int(-(b as i64))))
                 }
                 _ => ResultObj::Copy(Object::Null),
             },
@@ -224,15 +224,15 @@ impl Evaluator {
                 self.eval_infix_numeric_operation(a, b, operator)
             }
             (ResultObj::Copy(Object::Numeric(a)), ResultObj::Copy(Object::Boolean(b))) => {
-                self.eval_infix_numeric_operation(a, Numeric::Int(b as i128), operator)
+                self.eval_infix_numeric_operation(a, Numeric::Int(b as i64), operator)
             }
             (ResultObj::Copy(Object::Boolean(a)), ResultObj::Copy(Object::Numeric(b))) => {
-                self.eval_infix_numeric_operation(Numeric::Int(a as i128), b, operator)
+                self.eval_infix_numeric_operation(Numeric::Int(a as i64), b, operator)
             }
             (ResultObj::Copy(Object::Boolean(a)), ResultObj::Copy(Object::Boolean(b))) => self
                 .eval_infix_numeric_operation(
-                    Numeric::Int(a as i128),
-                    Numeric::Int(b as i128),
+                    Numeric::Int(a as i64),
+                    Numeric::Int(b as i64),
                     operator,
                 ),
             (ResultObj::Copy(Object::String(a)), ResultObj::Copy(Object::String(b))) => {

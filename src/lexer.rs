@@ -168,7 +168,7 @@ impl Lexer {
             )),
             NumericType::Hexadecimal => {
                 if let Ok(int) =
-                    i128::from_str_radix(self.input[start..end].trim_start_matches("0x"), 16)
+                    i64::from_str_radix(self.input[start..end].trim_start_matches("0x"), 16)
                 {
                     TokenType::Numeric(Numeric::Int(int))
                 } else {
@@ -177,7 +177,7 @@ impl Lexer {
             }
             NumericType::Octadecimal => {
                 if let Ok(int) =
-                    i128::from_str_radix(self.input[start..end].trim_start_matches("0o"), 8)
+                    i64::from_str_radix(self.input[start..end].trim_start_matches("0o"), 8)
                 {
                     TokenType::Numeric(Numeric::Int(int))
                 } else {
@@ -186,7 +186,7 @@ impl Lexer {
             }
             NumericType::Binary => {
                 if let Ok(int) =
-                    i128::from_str_radix(self.input[start..end].trim_start_matches("0b"), 2)
+                    i64::from_str_radix(self.input[start..end].trim_start_matches("0b"), 2)
                 {
                     TokenType::Numeric(Numeric::Int(int))
                 } else {

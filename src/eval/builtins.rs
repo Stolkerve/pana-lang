@@ -53,7 +53,7 @@ pub fn buildin_longitud_fn(
         // )),
         ResultObj::Copy(obj) => match obj {
             Object::String(string) => {
-                ResultObj::Copy(Object::Numeric(Numeric::Int(string.len() as i128)))
+                ResultObj::Copy(Object::Numeric(Numeric::Int(string.len() as i64)))
             }
             obj => ResultObj::Copy(Object::Error(format!(
                 "Se espera un tipo de dato cadena, no {}",
@@ -62,10 +62,10 @@ pub fn buildin_longitud_fn(
         },
         ResultObj::Ref(obj) => match &*obj.borrow() {
             Object::List(objs) => {
-                ResultObj::Copy(Object::Numeric(Numeric::Int(objs.len() as i128)))
+                ResultObj::Copy(Object::Numeric(Numeric::Int(objs.len() as i64)))
             }
             Object::Dictionary(pairs) => {
-                ResultObj::Copy(Object::Numeric(Numeric::Int(pairs.len() as i128)))
+                ResultObj::Copy(Object::Numeric(Numeric::Int(pairs.len() as i64)))
             }
             obj => ResultObj::Copy(Object::Error(format!(
                 "Se espera un tipo de dato cadena, no {}",
