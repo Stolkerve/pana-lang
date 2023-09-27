@@ -1,11 +1,49 @@
 use std::{collections::HashMap, fmt::Display};
+use std::hash::Hash;
 
-use crate::{ast::statements::BlockStatement, token::Token, types::Numeric};
+use crate::{token::TokenType, types::Numeric};
+
+use super::statement::BlockStatement;
+
+#[derive(Clone, Debug, Eq)]
+pub struct Expression {
+    pub r#type: ExprType,
+    pub line: usize,
+    pub col: usize
+}
+
+impl Expression {
+    pub fn new(r#type: ExprType, line: usize, col: usize) -> Self { Self { r#type, line, col } }
+}
+
+impl PartialEq for Expression {
+    fn eq(&self, other: &Self) -> bool {
+        self.r#type == other.r#type && self.line == other.line && self.col == other.col
+    }
+}
+
+impl Hash for Expression {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.r#type.hash(state);
+        self.line.hash(state);
+        self.col.hash(state);
+    }
+}
+
+#[allow(dead_code)]
+pub fn format_arguments(exprs: &[Expression]) -> String {
+    exprs
+        .iter()
+        .map(|x| x.r#type.to_string())
+        .collect::<Vec<String>>()
+        .join(", ")
+}
 
 pub type FnParams = Vec<Expression>;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
-pub enum Expression {
+pub enum ExprType {
     Identifier(String),
     NumericLiteral(Numeric),
     BooleanLiteral(bool),
@@ -26,18 +64,22 @@ pub enum Expression {
         index: Box<Expression>,
     },
     Prefix {
-        operator: Token,
+        operator: TokenType,
         right: Box<Expression>,
     },
     Infix {
         left: Box<Expression>,
         right: Box<Expression>,
-        operator: Token,
+        operator: TokenType,
     },
     If {
         condition: Box<Expression>,
         consequence: BlockStatement,
         alternative: BlockStatement,
+    },
+    While {
+        condition: Box<Expression>,
+        body: BlockStatement,
     },
     Call {
         function: Box<Expression>, // fn literal o identifier
@@ -49,15 +91,15 @@ pub enum Expression {
     },
 }
 
-impl Eq for Expression {}
+impl Eq for ExprType {}
 
-impl std::hash::Hash for Expression {
+impl std::hash::Hash for ExprType {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         core::mem::discriminant(self).hash(state);
     }
 }
 
-impl PartialEq for Expression {
+impl PartialEq for ExprType {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Identifier(l0), Self::Identifier(r0)) => l0 == r0,
@@ -91,7 +133,7 @@ impl PartialEq for Expression {
                     operator: r_operator,
                     right: r_right,
                 },
-            ) => l_operator == r_operator && l_right == r_right,
+            ) => l_operator == r_operator && l_right.r#type == r_right.r#type,
             (
                 Self::Infix {
                     left: l_left,
@@ -103,7 +145,7 @@ impl PartialEq for Expression {
                     right: r_right,
                     operator: r_operator,
                 },
-            ) => l_left == r_left && l_right == r_right && l_operator == r_operator,
+            ) => l_left.r#type == r_left.r#type && l_right.r#type == r_right.r#type && l_operator == r_operator,
             (Self::If { .. }, Self::If { .. }) => {
                 panic!("No se puede comparar bloques condicionales")
             }
@@ -116,48 +158,41 @@ impl PartialEq for Expression {
     }
 }
 
-impl Display for Expression {
+impl Display for ExprType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Expression::Identifier(ident) => write!(f, "{}", ident),
-            Expression::NumericLiteral(int) => write!(f, "{}", int),
-            Expression::Prefix { operator, right } => write!(f, "{}{}", operator, right),
-            Expression::Infix {
+            ExprType::Identifier(ident) => write!(f, "{}", ident),
+            ExprType::NumericLiteral(int) => write!(f, "{}", int),
+            ExprType::Prefix { operator, right } => write!(f, "{}{}", operator, right.r#type),
+            ExprType::Infix {
                 left,
                 right,
                 operator,
-            } => write!(f, "({}{}{})", left, operator, right),
-            Expression::BooleanLiteral(boolean) => write!(f, "{}", boolean),
-            Expression::If { condition, .. } => write!(f, "if {} {{...}}", condition),
-            Expression::FnLiteral { params, .. } => {
+            } => write!(f, "({}{}{})", left.r#type, operator, right.r#type),
+            ExprType::BooleanLiteral(boolean) => write!(f, "{}", boolean),
+            ExprType::If { condition, .. } => write!(f, "si {} {{...}}", condition.r#type),
+            ExprType::FnLiteral { params, .. } => {
                 write!(f, "fn({}) {{...}}", format_arguments(params))
             }
-            Expression::Call {
+            ExprType::Call {
                 function,
                 arguments,
-            } => write!(f, "{}({})", function, format_arguments(arguments)),
-            Expression::Assignment { left, right } => write!(f, "{} = {};", *left, *right),
-            Expression::StringLiteral(string) => write!(f, "\"{}\"", string),
-            Expression::ListLiteral { elements } => write!(f, "[{}]", format_arguments(elements)),
-            Expression::Index { left, index } => write!(f, "{}[{}]", *left, *index),
-            Expression::NullLiteral => write!(f, "nulo"),
-            Expression::DictionaryLiteral { pairs } => write!(
+            } => write!(f, "{}({})", function.r#type, format_arguments(arguments)),
+            ExprType::Assignment { left, right } => write!(f, "{} = {};", left.r#type, right.r#type),
+            ExprType::StringLiteral(string) => write!(f, "\"{}\"", string),
+            ExprType::ListLiteral { elements } => write!(f, "[{}]", format_arguments(elements)),
+            ExprType::Index { left, index } => write!(f, "{}[{}]", left.r#type, index.r#type),
+            ExprType::NullLiteral => write!(f, "nulo"),
+            ExprType::DictionaryLiteral { pairs } => write!(
                 f,
                 "{{{}}}",
                 pairs
                     .iter()
-                    .map(|(x, y)| format!("{}: {}", x, y))
+                    .map(|(x, y)| format!("{}: {}", x.r#type, y.r#type))
                     .collect::<Vec<String>>()
                     .join(", ")
             ),
+            ExprType::While { condition, .. } => write!(f, "mientras {} {{...}}", condition.r#type),
         }
     }
-}
-
-pub fn format_arguments(exprs: &[Expression]) -> String {
-    exprs
-        .iter()
-        .map(|x| x.to_string())
-        .collect::<Vec<String>>()
-        .join(", ")
 }

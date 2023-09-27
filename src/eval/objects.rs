@@ -1,14 +1,10 @@
 use std::{cell::RefCell, collections::HashMap, fmt::Display, hash::Hash, rc::Rc};
 
 use crate::{
-    ast::{
-        expressions::{format_arguments, FnParams},
-        statements::BlockStatement,
-    },
-    buildins::BuildinFnPointer,
-    environment::Environment,
-    types::Numeric,
+    types::Numeric, parser::{expression::{FnParams, format_arguments}, statement::BlockStatement},
 };
+
+use super::{environment::Environment, builtins::BuildinFnPointer};
 
 pub type RcObject = Rc<RefCell<Object>>;
 pub fn new_rc_object(obj: Object) -> RcObject {
@@ -71,7 +67,14 @@ impl Object {
             Object::Boolean(_) => "logico",
             Object::Error(_) => "error",
             Object::String(_) => "cadena",
-            Object::Return(_) => panic!("Return no es un tipo, no deberias ver esto"),
+            Object::Return(obj) => {
+                match obj.as_ref() {
+                    ResultObj::Borrow(obj) => obj.get_type(),
+                    ResultObj::Ref(_) => todo!(),
+                        // let a = obj.borrow();
+                        // a.get_type()
+                }
+            },
             Object::FnExpr { .. } => "funcion",
             Object::Fn { .. } => "funcion",
             Object::BuildinFn { .. } => "funcion",
@@ -90,7 +93,7 @@ impl Display for Object {
             Object::Boolean(b) => write!(f, "{}", bool_to_spanish(*b)),
             Object::Null => write!(f, "nulo"),
             Object::Error(msg) => write!(f, "{}", msg),
-            Object::Return(_) => panic!("Literalmente, nunca"),
+            Object::Return(obj) => write!(f, "{}", obj),
             Object::Fn { params, name, .. } => {
                 write!(f, "fn {}({}) {{...}}", name, format_arguments(params))
             }

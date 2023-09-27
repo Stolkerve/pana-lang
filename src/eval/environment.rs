@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::objects::{RcObject, ResultObj};
+use super::objects::{ResultObj, RcObject};
 
 pub type StackObject = HashMap<String, ResultObj>;
 pub type RcEnvironment = Rc<RefCell<Environment>>;
@@ -68,8 +68,8 @@ impl Environment {
 
     // Va a visitar todos los stacks hasta encontrar la variable o fn
     // y actulizarlo
-    pub fn update(&mut self, name: String, value: ResultObj) -> Option<ResultObj> {
-        match self.stack.get(&name) {
+    pub fn update(&mut self, name: &String, value: ResultObj) -> Option<ResultObj> {
+        match self.stack.get(name) {
             Some(_) => self.stack.insert(name.clone(), value),
             None => match self.parent {
                 Some(ref env) => {

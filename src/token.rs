@@ -1,9 +1,9 @@
+use crate::types::Numeric;
 use std::fmt::Display;
 
-use crate::types::Numeric;
-
+#[allow(dead_code)]
 #[derive(PartialEq, Clone, Debug)]
-pub enum Token {
+pub enum TokenType {
     Illegal(char),
     IllegalMsg(String),
     Eof,
@@ -39,6 +39,7 @@ pub enum Token {
     LBracket,
     RBracket,
     Colon,
+    NewLine,
 
     // Keywords
     Func,
@@ -49,83 +50,102 @@ pub enum Token {
     True,
     False,
     Null,
+    While
 }
 
-impl Display for Token {
+// impl Eq for TokenType {
+// }
+
+// impl PartialEq for TokenType {
+//     fn ne(&self, other: &Self) -> bool {
+//         !self.eq(other)
+//     }
+
+//     fn eq(&self, other: &Self) -> bool {
+//         match (self, other) {
+//             (TokenType::Illegal(c), TokenType::Illegal(c2)) => c == c2,
+//             (TokenType::IllegalMsg(msg), TokenType::IllegalMsg(msg2)) => msg == msg2,
+//            (t, t2) =>  t == t2
+//         }
+//     }
+// }
+
+impl Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Token::Plus => write!(f, "+"),
-            Token::Sub => write!(f, "-"),
-            Token::Div => write!(f, "/"),
-            Token::Mul => write!(f, "*"),
-            Token::Not => write!(f, "!"),
-            Token::Eq => write!(f, "=="),
-            Token::NotEq => write!(f, "!="),
-            Token::Lt => write!(f, "<"),
-            Token::Gt => write!(f, ">"),
-            Token::LtEq => write!(f, "<="),
-            Token::GtEq => write!(f, ">="),
-            Token::Func => write!(f, "fn"),
-            Token::True => write!(f, "verdad"),
-            Token::False => write!(f, "falso"),
-            Token::Illegal(char) => write!(f, "{}", char),
-            Token::Eof => write!(f, "EOF"),
-            Token::Ident(ident) => write!(f, "{}", ident),
-            Token::Numeric(int) => write!(f, "{}", int),
-            Token::Assign => write!(f, "="),
-            Token::Comma => write!(f, ","),
-            Token::SemiColon => write!(f, ";"),
-            Token::LParen => write!(f, "("),
-            Token::RParen => write!(f, ")"),
-            Token::LBrace => write!(f, "{{"),
-            Token::RBrace => write!(f, "}}"),
-            Token::Var => write!(f, "var"),
-            Token::Return => write!(f, "retornar"),
-            Token::If => write!(f, "si"),
-            Token::Else => write!(f, "sino"),
-            Token::String(string) => write!(f, "\"{}\"", string),
-            Token::Dot => write!(f, "."),
-            Token::LBracket => write!(f, "["),
-            Token::RBracket => write!(f, "]"),
-            Token::Null => write!(f, "nulo"),
-            Token::CommentLine => write!(f, "|"),
-            Token::Colon => write!(f, ":"),
-            Token::IllegalMsg(msg) => write!(f, "{}", msg),
+            TokenType::Plus => write!(f, "+"),
+            TokenType::Sub => write!(f, "-"),
+            TokenType::Div => write!(f, "/"),
+            TokenType::Mul => write!(f, "*"),
+            TokenType::Not => write!(f, "!"),
+            TokenType::Eq => write!(f, "=="),
+            TokenType::NotEq => write!(f, "!="),
+            TokenType::Lt => write!(f, "<"),
+            TokenType::Gt => write!(f, ">"),
+            TokenType::LtEq => write!(f, "<="),
+            TokenType::GtEq => write!(f, ">="),
+            TokenType::Func => write!(f, "fn"),
+            TokenType::True => write!(f, "verdad"),
+            TokenType::False => write!(f, "falso"),
+            TokenType::Illegal(char) => write!(f, "{}", char),
+            TokenType::Eof => write!(f, "EOF"),
+            TokenType::Ident(ident) => write!(f, "{}", ident),
+            TokenType::Numeric(int) => write!(f, "{}", int),
+            TokenType::Assign => write!(f, "="),
+            TokenType::Comma => write!(f, ","),
+            TokenType::SemiColon => write!(f, ";"),
+            TokenType::LParen => write!(f, "("),
+            TokenType::RParen => write!(f, ")"),
+            TokenType::LBrace => write!(f, "{{"),
+            TokenType::RBrace => write!(f, "}}"),
+            TokenType::Var => write!(f, "var"),
+            TokenType::Return => write!(f, "retornar"),
+            TokenType::If => write!(f, "si"),
+            TokenType::Else => write!(f, "sino"),
+            TokenType::String(string) => write!(f, "\"{}\"", string),
+            TokenType::Dot => write!(f, "."),
+            TokenType::LBracket => write!(f, "["),
+            TokenType::RBracket => write!(f, "]"),
+            TokenType::Null => write!(f, "nulo"),
+            TokenType::CommentLine => write!(f, "#"),
+            TokenType::Colon => write!(f, ":"),
+            TokenType::IllegalMsg(msg) => write!(f, "{}", msg),
+            TokenType::NewLine => write!(f, "\\n"),
+            TokenType::While => write!(f, "mientras"),
         }
     }
 }
 
-pub fn keywords_to_tokens(v: &str) -> Token {
+#[allow(dead_code)]
+pub fn keywords_to_tokens(v: &str) -> TokenType {
     match v {
-        "var" => Token::Var,
-        "fn" => Token::Func,
-        "si" => Token::If,
-        "sino" => Token::Else,
-        "retornar" => Token::Return,
-        "verdad" => Token::True,
-        "falso" => Token::False,
-        "nulo" => Token::Null,
-        _ => Token::Ident(v.to_owned()),
+        "var" => TokenType::Var,
+        "fn" => TokenType::Func,
+        "si" => TokenType::If,
+        "sino" => TokenType::Else,
+        "retornar" => TokenType::Return,
+        "verdad" => TokenType::True,
+        "falso" => TokenType::False,
+        "nulo" => TokenType::Null,
+        "para" => TokenType::IllegalMsg("La palabra clave `para` no esta implementada aun".to_owned()),
+        "mientras" => TokenType::While,
+        "en" => TokenType::IllegalMsg("La palabra clave `en` no esta implementada aun".to_owned()),
+        "continuar" => TokenType::IllegalMsg("La palabra clave `continuar` no esta implementada aun".to_owned()),
+        "romper" => TokenType::IllegalMsg("La palabra clave `romper` no esta implementada aun".to_owned()),
+        _ => TokenType::Ident(v.to_owned()),
     }
 }
 
-// #[derive(Debug)]
-// pub struct Token<'a> {
-//     pub token_type: TokenType<'a>,
-//     pub pos: usize
-// }
+#[derive(PartialEq, Clone, Debug)]
+pub struct Token {
+    pub r#type: TokenType,
+    pub line: usize,
+    pub col: usize,
+}
 
-// impl PartialEq for Token {
-//     fn eq(&self, other: &Self) -> bool {
-//         (self.literal == other.literal) && (self.token_type == other.token_type)
-//     }
-// }
-
-// impl Token {
-//     pub fn new(literal: String, token_type: TokenType) -> Self {
-//         Self {
-//             literal,
-//             token_type,
-//         }
-//     }
-// }
+#[allow(dead_code)]
+impl Token {
+    pub fn new(r#type: TokenType, line: usize, col: usize) -> Self {
+        Self { r#type, line, col }
+    }
+}

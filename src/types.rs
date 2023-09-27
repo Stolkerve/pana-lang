@@ -3,9 +3,10 @@ use std::{
     ops::{Add, Div, Mul, Neg, Sub},
 };
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum Numeric {
-    Int(i64), // dependiendo del build, tendras: 32 o 64 bits de numero entero
+    Int(i128), // dependiendo del build, tendras: 32 o 64 bits de numero entero
     Float(f64),
 }
 

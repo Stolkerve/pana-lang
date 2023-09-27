@@ -1,27 +1,19 @@
-mod ast;
-mod buildins;
-mod environment;
-mod evaluator;
 mod lexer;
-mod objects;
 mod parser;
-mod promp_theme;
-mod repl;
 mod token;
 mod types;
+mod eval;
+
+use std::fs;
 
 use clap::{Arg, Command};
-use console::Term;
-use evaluator::Evaluator;
+use eval::{evaluator::Evaluator, objects::{ResultObj, Object}};
 use lexer::Lexer;
-use objects::{Object, ResultObj};
 use parser::Parser;
-use repl::repl;
-use std::{fs, io::Error};
 
 pub const PANA_MIGUEL_ASCII: &str = include_str!("../assets/pana_miguel.txt");
 
-fn main() -> Result<(), Error> {
+fn main() {
     let matches = Command::new("Lenguaje de programacion Pana")
         .version(env!("CARGO_PKG_VERSION"))
         .author("Sebastian Gonzalez. <devsebasgr@gmail.com>")
@@ -29,42 +21,35 @@ fn main() -> Result<(), Error> {
         .arg(Arg::new("archivo"))
         .get_matches();
 
-    let term = Term::stdout();
-
     if let Some(file_path) = matches.get_one::<String>("archivo") {
         if file_path == "pana" {
-            term.write_line(PANA_MIGUEL_ASCII)?;
-            return Ok(());
+            println!("{}", PANA_MIGUEL_ASCII);
+            return;
         }
 
         let mut evaluator = Evaluator::new();
         let file_str = fs::read_to_string(file_path)
             .expect(&format!("No es encotro el archivo {}", file_path));
-        let lexer = Lexer::new(&file_str);
+        let lexer = Lexer::new(file_str);
         let mut parser = Parser::new(lexer);
+        let program = parser.parse();
 
-        if !parser.errors.is_empty() {
-            term.write_line(&format!(
-                "{}",
-                console::style(
-                    parser
-                        .errors
-                        .iter()
-                        .map(|e| e.to_string())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
-                .red()
-            ))?;
-            return Ok(());
+        // Imprir error a nivel de parser
+        if let Some(err) = parser.error {
+            println!("{}", err);
+            return;
         }
-        let program = parser.parse_program();
+
+        // Imprimir error de runtime
         if let ResultObj::Borrow(Object::Error(msg)) = evaluator.eval_program(program) {
             println!("{}", msg);
-            return Ok(());
+            return;
         }
-        return Ok(());
+        return;
     }
 
-    repl(term)
+    println!("Comandos xd");
 }
+
+#[cfg(test)]
+mod test;

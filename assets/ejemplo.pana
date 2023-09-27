@@ -1,6 +1,0 @@
-var a = "hola";
-var b = "mundo";
-
-|imprimir a y b, dando como resultado
-|"Hola mundo"
-imprimir(a, " ", b);
