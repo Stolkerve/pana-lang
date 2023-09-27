@@ -34,7 +34,7 @@ impl Environment {
     pub fn get_ref(&self, name: &String) -> Option<RcObject> {
         match self.stack.get(name) {
             Some(obj) => Some(match obj {
-                ResultObj::Borrow(_) => panic!("No se puede referenciar a un objeto copia"),
+                ResultObj::Copy(_) => panic!("No se puede referenciar a un objeto copia"),
                 ResultObj::Ref(xd) => xd.clone(),
             }),
             None => match self.parent {

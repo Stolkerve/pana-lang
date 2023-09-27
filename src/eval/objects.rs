@@ -69,7 +69,7 @@ impl Object {
             Object::String(_) => "cadena",
             Object::Return(obj) => {
                 match obj.as_ref() {
-                    ResultObj::Borrow(obj) => obj.get_type(),
+                    ResultObj::Copy(obj) => obj.get_type(),
                     ResultObj::Ref(_) => todo!(),
                         // let a = obj.borrow();
                         // a.get_type()
@@ -137,7 +137,7 @@ a un objeto como: List, Dictionary.
 */
 #[derive(Clone)]
 pub enum ResultObj {
-    Borrow(Object),
+    Copy(Object),
     Ref(RcObject),
 }
 
@@ -152,7 +152,7 @@ impl Eq for ResultObj {}
 impl PartialEq for ResultObj {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Borrow(l0), Self::Borrow(r0)) => l0 == r0,
+            (Self::Copy(l0), Self::Copy(r0)) => l0 == r0,
             (Self::Ref(l0), Self::Ref(r0)) => l0 == r0,
             _ => false,
         }
@@ -162,7 +162,7 @@ impl PartialEq for ResultObj {
 impl Display for ResultObj {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ResultObj::Borrow(obj) => write!(f, "{}", obj),
+            ResultObj::Copy(obj) => write!(f, "{}", obj),
             ResultObj::Ref(obj) => write!(f, "{}", obj.borrow()),
         }
     }

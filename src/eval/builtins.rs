@@ -40,7 +40,7 @@ pub fn buildin_longitud_fn(
     env: &RcEnvironment,
 ) -> ResultObj {
     if args.len() != 1 {
-        return ResultObj::Borrow(Object::Error(format!(
+        return ResultObj::Copy(Object::Error(format!(
             "Se encontro {} argumentos de 1",
             args.len()
         )));
@@ -51,23 +51,23 @@ pub fn buildin_longitud_fn(
         //     "Se espera un tipo de dato cadena, no {}",
         //     obj.get_type()
         // )),
-        ResultObj::Borrow(obj) => match obj {
+        ResultObj::Copy(obj) => match obj {
             Object::String(string) => {
-                ResultObj::Borrow(Object::Numeric(Numeric::Int(string.len() as i128)))
+                ResultObj::Copy(Object::Numeric(Numeric::Int(string.len() as i128)))
             }
-            obj => ResultObj::Borrow(Object::Error(format!(
+            obj => ResultObj::Copy(Object::Error(format!(
                 "Se espera un tipo de dato cadena, no {}",
                 obj.get_type()
             ))),
         },
         ResultObj::Ref(obj) => match &*obj.borrow() {
             Object::List(objs) => {
-                ResultObj::Borrow(Object::Numeric(Numeric::Int(objs.len() as i128)))
+                ResultObj::Copy(Object::Numeric(Numeric::Int(objs.len() as i128)))
             }
             Object::Dictionary(pairs) => {
-                ResultObj::Borrow(Object::Numeric(Numeric::Int(pairs.len() as i128)))
+                ResultObj::Copy(Object::Numeric(Numeric::Int(pairs.len() as i128)))
             }
-            obj => ResultObj::Borrow(Object::Error(format!(
+            obj => ResultObj::Copy(Object::Error(format!(
                 "Se espera un tipo de dato cadena, no {}",
                 obj.get_type()
             ))),
@@ -92,10 +92,10 @@ pub fn buildin_imprimir_fn(
             .collect::<Vec<_>>()
             .join("");
         println!("{}", string);
-        return ResultObj::Borrow(Object::Void);
+        return ResultObj::Copy(Object::Void);
     }
     println!();
-    ResultObj::Borrow(Object::Void)
+    ResultObj::Copy(Object::Void)
 }
 
 // Funcion que retorna el tipo de dato del objeto
@@ -105,16 +105,16 @@ pub fn buildin_tipo_fn(
     env: &RcEnvironment,
 ) -> ResultObj {
     if args.len() != 1 {
-        return ResultObj::Borrow(Object::Error(format!(
+        return ResultObj::Copy(Object::Error(format!(
             "Se encontro {} argumentos de 1",
             args.len()
         )));
     }
     let arg_obj = eval.eval_expression(args.get(0).unwrap().clone(), env);
     match arg_obj {
-        ResultObj::Borrow(obj) => ResultObj::Borrow(Object::String(obj.get_type().to_owned())),
+        ResultObj::Copy(obj) => ResultObj::Copy(Object::String(obj.get_type().to_owned())),
         ResultObj::Ref(obj) => {
-            ResultObj::Borrow(Object::String(obj.borrow().get_type().to_owned()))
+            ResultObj::Copy(Object::String(obj.borrow().get_type().to_owned()))
         }
     }
 }
@@ -129,31 +129,31 @@ pub fn buildin_leer_fn(
         0 => {
             let mut output = String::new();
             std::io::stdin().read_line(&mut output).unwrap();
-            ResultObj::Borrow(Object::String(output))
+            ResultObj::Copy(Object::String(output))
         }
         1 => {
             let arg_obj = eval.eval_expression(args.get(0).unwrap().clone(), env);
             return match arg_obj {
-                ResultObj::Borrow(obj) => match obj {
+                ResultObj::Copy(obj) => match obj {
                     Object::String(promp) => {
                         let mut output = String::new();
                         print!("{}", promp);
                         std::io::stdout().flush().unwrap();
                         std::io::stdin().read_line(&mut output).unwrap();
-                        return ResultObj::Borrow(Object::String(output.trim_end().to_owned()));
+                        return ResultObj::Copy(Object::String(output.trim_end().to_owned()));
                     }
-                    _ => ResultObj::Borrow(Object::Error(format!(
+                    _ => ResultObj::Copy(Object::Error(format!(
                         "Se espera un tipo de dato cadena, no {}",
                         obj.get_type()
                     ))),
                 },
-                ResultObj::Ref(obj) => ResultObj::Borrow(Object::Error(format!(
+                ResultObj::Ref(obj) => ResultObj::Copy(Object::Error(format!(
                     "Se espera un tipo de dato cadena, no {}",
                     obj.borrow().get_type()
                 ))),
             };
         }
-        _ => ResultObj::Borrow(Object::Error(format!(
+        _ => ResultObj::Copy(Object::Error(format!(
             "Se encontro {} argumentos de 1",
             args.len()
         ))),
@@ -166,14 +166,14 @@ pub fn buildin_cadena_fn(
     env: &RcEnvironment,
 ) -> ResultObj {
     if args.len() != 1 {
-        return ResultObj::Borrow(Object::Error(format!(
+        return ResultObj::Copy(Object::Error(format!(
             "Se encontro {} argumentos de 1",
             args.len()
         )));
     }
     let arg_obj = eval.eval_expression(args.get(0).unwrap().clone(), env);
     match arg_obj {
-        ResultObj::Borrow(obj) => ResultObj::Borrow(Object::String(obj.to_string())),
-        ResultObj::Ref(obj) => ResultObj::Borrow(Object::String(obj.borrow().to_string())),
+        ResultObj::Copy(obj) => ResultObj::Copy(Object::String(obj.to_string())),
+        ResultObj::Ref(obj) => ResultObj::Copy(Object::String(obj.borrow().to_string())),
     }
 }

@@ -41,7 +41,7 @@ fn main() {
         }
 
         // Imprimir error de runtime
-        if let ResultObj::Borrow(Object::Error(msg)) = evaluator.eval_program(program) {
+        if let ResultObj::Copy(Object::Error(msg)) = evaluator.eval_program(program) {
             println!("{}", msg);
             return;
         }
