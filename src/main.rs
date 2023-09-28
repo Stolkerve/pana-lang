@@ -1,13 +1,16 @@
+mod eval;
 mod lexer;
 mod parser;
 mod token;
 mod types;
-mod eval;
 
 use std::fs;
 
 use clap::{Arg, Command};
-use eval::{evaluator::Evaluator, objects::{ResultObj, Object}};
+use eval::{
+    evaluator::Evaluator,
+    objects::{Object, ResultObj},
+};
 use lexer::Lexer;
 use parser::Parser;
 

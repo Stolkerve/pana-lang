@@ -1,10 +1,14 @@
 use std::{cell::RefCell, collections::HashMap, fmt::Display, hash::Hash, rc::Rc};
 
 use crate::{
-    types::Numeric, parser::{expression::{FnParams, format_arguments}, statement::BlockStatement},
+    parser::{
+        expression::{format_arguments, FnParams},
+        statement::BlockStatement,
+    },
+    types::Numeric,
 };
 
-use super::{environment::Environment, builtins::BuildinFnPointer};
+use super::{builtins::BuildinFnPointer, environment::Environment};
 
 pub type RcObject = Rc<RefCell<Object>>;
 pub fn new_rc_object(obj: Object) -> RcObject {
@@ -71,10 +75,10 @@ impl Object {
                 match obj.as_ref() {
                     ResultObj::Copy(obj) => obj.get_type(),
                     ResultObj::Ref(_) => todo!(),
-                        // let a = obj.borrow();
-                        // a.get_type()
+                    // let a = obj.borrow();
+                    // a.get_type()
                 }
-            },
+            }
             Object::FnExpr { .. } => "funcion",
             Object::Fn { .. } => "funcion",
             Object::BuildinFn { .. } => "funcion",

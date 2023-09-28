@@ -56,10 +56,8 @@ impl Lexer {
     }
 
     fn skip_whitespace(&mut self) {
-        while self.current_char == ' '
-            || self.current_char == '\t'
-            || self.current_char == '\r'
-            // || self.current_char == '\n'
+        while self.current_char == ' ' || self.current_char == '\t' || self.current_char == '\r'
+        // || self.current_char == '\n'
         {
             // if self.current_char == '\n' {
             //     self.col = 0;
@@ -129,11 +127,7 @@ impl Lexer {
                 self.read_char();
                 end += 1;
             } else if self.is_identifier_alpha(c) {
-                return Token::new(
-                    TokenType::Illegal(c),
-                    line,
-                    self.col,
-                );
+                return Token::new(TokenType::Illegal(c), line, self.col);
             }
         }
 
@@ -301,7 +295,7 @@ impl Lexer {
                 self.col = 0;
                 self.line += 1;
                 Token::new(TokenType::NewLine, self.line, self.col)
-            },
+            }
             '\0' => Token::new(TokenType::Eof, self.line, self.col),
             c => {
                 if self.is_identifier_alpha(c) {

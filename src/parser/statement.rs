@@ -16,6 +16,6 @@ pub enum Statement {
         params: FnParams,
         body: BlockStatement,
         line: usize,
-        col: usize
+        col: usize,
     },
 }

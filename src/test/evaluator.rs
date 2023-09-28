@@ -1,4 +1,2 @@
 #[test]
-fn eval() {
-
-}
+fn eval() {}

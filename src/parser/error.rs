@@ -33,7 +33,7 @@ pub fn set_parser_err_line_col(err: ParserError, line: usize, col: usize) -> Par
         ParserError::MissingRightParen(_, _) => ParserError::MissingRightParen(line, col),
         ParserError::MissingRightBrace(_, _) => ParserError::MissingRightBrace(line, col),
         ParserError::MissingRightBracket(_, _) => ParserError::MissingRightBracket(line, col),
-        err => err
+        err => err,
     }
 }
 

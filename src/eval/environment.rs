@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use super::objects::{ResultObj, RcObject};
+use super::objects::{RcObject, ResultObj};
 
 pub type StackObject = HashMap<String, ResultObj>;
 pub type RcEnvironment = Rc<RefCell<Environment>>;

@@ -9,8 +9,8 @@ use crate::{
 };
 
 use self::{
-    error::{ParserError, set_parser_err_line_col},
-    expression::{Expression, ExprType, FnParams},
+    error::{set_parser_err_line_col, ParserError},
+    expression::{ExprType, Expression, FnParams},
     statement::{BlockStatement, Statement},
 };
 
@@ -60,7 +60,7 @@ pub struct Parser {
 #[allow(dead_code)]
 impl Parser {
     pub fn new(lexer: Lexer) -> Self {
-        let parse = Self {
+        Self {
             lexer,
             current_token: Token {
                 r#type: TokenType::Eof,
@@ -73,9 +73,7 @@ impl Parser {
                 col: 0,
             },
             error: None,
-        };
-
-        parse
+        }
     }
 
     fn next_token(&mut self) {
@@ -131,7 +129,9 @@ impl Parser {
         self.next_token();
 
         while self.current_token.r#type != TokenType::Eof {
-            if !self.current_token_is(TokenType::CommentLine) && !self.current_token_is(TokenType::NewLine){
+            if !self.current_token_is(TokenType::CommentLine)
+                && !self.current_token_is(TokenType::NewLine)
+            {
                 match self.parse_statement() {
                     Ok(stmt) => statements.push(stmt),
                     Err(err) => {
@@ -147,7 +147,7 @@ impl Parser {
 
     fn parse_statement(&mut self) -> Result<Statement, ParserError> {
         // println!("{:?}, {:?}", self.current_token, self.peek_token);
-        while self.current_token_is(TokenType::CommentLine) {
+        if self.current_token_is(TokenType::CommentLine) {
             self.next_token();
             return self.parse_statement();
         }
@@ -290,7 +290,7 @@ impl Parser {
             params,
             body,
             line,
-            col
+            col,
         })
     }
 
@@ -305,13 +305,21 @@ impl Parser {
         self.next_token();
 
         if let TokenType::Ident(ident) = self.current_token.clone().r#type {
-            params.push(Expression::new(ExprType::Identifier(ident), self.current_token.line, self.current_token.col));
+            params.push(Expression::new(
+                ExprType::Identifier(ident),
+                self.current_token.line,
+                self.current_token.col,
+            ));
             while self.peek_token_is(TokenType::Comma) {
                 self.next_token();
                 self.next_token();
 
                 if let TokenType::Ident(ident) = self.current_token.clone().r#type {
-                    params.push(Expression::new(ExprType::Identifier(ident), self.current_token.line, self.current_token.col));
+                    params.push(Expression::new(
+                        ExprType::Identifier(ident),
+                        self.current_token.line,
+                        self.current_token.col,
+                    ));
                 } else {
                     return Err(ParserError::Illegal(self.current_token.clone()));
                 }
@@ -346,11 +354,31 @@ impl Parser {
             match &self.current_token.r#type {
                 // Literals values
                 TokenType::Ident(ident) => self.parse_identifier(ident.clone()),
-                TokenType::Numeric(numeric) => Ok(Expression::new(ExprType::NumericLiteral(numeric.to_owned()), self.current_token.line, self.current_token.col)),
-                TokenType::True => Ok(Expression::new(ExprType::BooleanLiteral(true), self.current_token.line, self.current_token.col)),
-                TokenType::False => Ok(Expression::new(ExprType::BooleanLiteral(false), self.current_token.line, self.current_token.col)),
-                TokenType::String(string) => Ok(Expression::new(ExprType::StringLiteral(string.to_string()), self.current_token.line, self.current_token.col)),
-                TokenType::Null => Ok(Expression::new(ExprType::NullLiteral, self.current_token.line, self.current_token.col)),
+                TokenType::Numeric(numeric) => Ok(Expression::new(
+                    ExprType::NumericLiteral(numeric.to_owned()),
+                    self.current_token.line,
+                    self.current_token.col,
+                )),
+                TokenType::True => Ok(Expression::new(
+                    ExprType::BooleanLiteral(true),
+                    self.current_token.line,
+                    self.current_token.col,
+                )),
+                TokenType::False => Ok(Expression::new(
+                    ExprType::BooleanLiteral(false),
+                    self.current_token.line,
+                    self.current_token.col,
+                )),
+                TokenType::String(string) => Ok(Expression::new(
+                    ExprType::StringLiteral(string.to_string()),
+                    self.current_token.line,
+                    self.current_token.col,
+                )),
+                TokenType::Null => Ok(Expression::new(
+                    ExprType::NullLiteral,
+                    self.current_token.line,
+                    self.current_token.col,
+                )),
 
                 // Prefix
                 TokenType::Bang => self.parse_prefix_expression(),
@@ -441,7 +469,11 @@ impl Parser {
 
     fn parse_identifier(&mut self, ident: String) -> Result<Expression, ParserError> {
         if !self.peek_token_is(TokenType::Assign) {
-            return Ok(Expression::new(ExprType::Identifier(ident), self.current_token.line, self.current_token.col));
+            return Ok(Expression::new(
+                ExprType::Identifier(ident),
+                self.current_token.line,
+                self.current_token.col,
+            ));
         }
 
         self.next_token();
@@ -458,20 +490,32 @@ impl Parser {
             }
         }
 
-        Ok(Expression::new(ExprType::Assignment {
-            left: Box::new(Expression::new(ExprType::Identifier(ident), self.current_token.line, self.current_token.col)),
-            right: Box::new(expr),
-        }, self.current_token.line, self.current_token.col))
+        Ok(Expression::new(
+            ExprType::Assignment {
+                left: Box::new(Expression::new(
+                    ExprType::Identifier(ident),
+                    self.current_token.line,
+                    self.current_token.col,
+                )),
+                right: Box::new(expr),
+            },
+            self.current_token.line,
+            self.current_token.col,
+        ))
     }
 
     fn parse_prefix_expression(&mut self) -> Result<Expression, ParserError> {
         let op_token = self.current_token.clone();
         self.next_token();
         if let Ok(right_expr) = self.parse_expression(Precedence::Prefix) {
-            let expr = Expression::new(ExprType::Prefix {
-                operator: op_token.r#type,
-                right: Box::new(right_expr),
-            }, self.current_token.line, self.current_token.col);
+            let expr = Expression::new(
+                ExprType::Prefix {
+                    operator: op_token.r#type,
+                    right: Box::new(right_expr),
+                },
+                self.current_token.line,
+                self.current_token.col,
+            );
             return Ok(expr);
         }
         Err(ParserError::MissingExpression(
@@ -487,11 +531,15 @@ impl Parser {
         self.next_token();
 
         let right = self.parse_expression(precedence)?;
-        Ok(Expression::new(ExprType::Infix {
-            left: Box::new(left),
-            operator: op_token.r#type,
-            right: Box::new(right),
-        }, self.current_token.line, self.current_token.col))
+        Ok(Expression::new(
+            ExprType::Infix {
+                left: Box::new(left),
+                operator: op_token.r#type,
+                right: Box::new(right),
+            },
+            self.current_token.line,
+            self.current_token.col,
+        ))
     }
 
     fn parse_if_expression(&mut self) -> Result<Expression, ParserError> {
@@ -528,11 +576,15 @@ impl Parser {
                 }
             }
         }
-        Ok(Expression::new(ExprType::If {
-            condition: Box::new(conditional_expr),
-            consequence: consequence_stmts,
-            alternative: alternative_stmts,
-        }, self.current_token.line, self.current_token.col))
+        Ok(Expression::new(
+            ExprType::If {
+                condition: Box::new(conditional_expr),
+                consequence: consequence_stmts,
+                alternative: alternative_stmts,
+            },
+            self.current_token.line,
+            self.current_token.col,
+        ))
     }
 
     fn parse_fn_literal(&mut self) -> Result<Expression, ParserError> {
@@ -554,7 +606,11 @@ impl Parser {
 
         let body = self.parse_block_statement()?;
 
-        Ok(Expression::new(ExprType::FnLiteral { body, params }, self.current_token.line, self.current_token.col))
+        Ok(Expression::new(
+            ExprType::FnLiteral { body, params },
+            self.current_token.line,
+            self.current_token.col,
+        ))
     }
 
     fn parse_grouped_expression(&mut self) -> Result<Expression, ParserError> {
@@ -600,7 +656,11 @@ impl Parser {
         }
 
         if !self.expected_peek(end) {
-            return Err(set_parser_err_line_col(err, self.peek_token.line, self.peek_token.col));
+            return Err(set_parser_err_line_col(
+                err,
+                self.peek_token.line,
+                self.peek_token.col,
+            ));
         }
 
         Ok(args)
@@ -616,14 +676,16 @@ impl Parser {
                     return Err(err);
                 }
 
-                Ok(Expression::new(ExprType::Call {
-                    function: Box::new(function),
-                    arguments,
-                }, self.current_token.line, self.current_token.col))
+                Ok(Expression::new(
+                    ExprType::Call {
+                        function: Box::new(function),
+                        arguments,
+                    },
+                    self.current_token.line,
+                    self.current_token.col,
+                ))
             }
-            Err(err) => {
-                return Err(err);
-            }
+            Err(err) => Err(err),
         }
     }
 
@@ -631,10 +693,12 @@ impl Parser {
         let elements =
             self.parse_expression_list(TokenType::RBracket, ParserError::MissingRightBracket(0, 0));
         match elements {
-            Ok(elements) => Ok(Expression::new(ExprType::ListLiteral { elements }, self.current_token.line, self.current_token.col)),
-            Err(err) => {
-                return Err(err);
-            }
+            Ok(elements) => Ok(Expression::new(
+                ExprType::ListLiteral { elements },
+                self.current_token.line,
+                self.current_token.col,
+            )),
+            Err(err) => Err(err),
         }
     }
 
@@ -649,7 +713,7 @@ impl Parser {
                     self.peek_token.col,
                 ));
             }
-            if let ExprType::FnLiteral {..} = key.r#type {
+            if let ExprType::FnLiteral { .. } = key.r#type {
                 return Err(ParserError::IllegalMsg(
                     "No se puede usar funciones anonimas como llaves".to_owned(),
                     self.current_token.line,
@@ -675,7 +739,11 @@ impl Parser {
                 self.peek_token.col,
             ));
         }
-        Ok(Expression::new(ExprType::DictionaryLiteral { pairs: dictionary }, self.current_token.line, self.current_token.col))
+        Ok(Expression::new(
+            ExprType::DictionaryLiteral { pairs: dictionary },
+            self.current_token.line,
+            self.current_token.col,
+        ))
     }
 
     fn parse_index_expression(&mut self, left: Expression) -> Result<Expression, ParserError> {
@@ -700,22 +768,34 @@ impl Parser {
                     self.peek_token.col,
                 ));
             }
-            return Ok(Expression::new(ExprType::Assignment {
-                left: Box::new(Expression::new(ExprType::Index {
-                    left: Box::new(left),
-                    index: Box::new(index),
-                }, self.current_token.line, self.current_token.col)),
-                right: Box::new(right),
-            }, self.current_token.line, self.current_token.col));
+            return Ok(Expression::new(
+                ExprType::Assignment {
+                    left: Box::new(Expression::new(
+                        ExprType::Index {
+                            left: Box::new(left),
+                            index: Box::new(index),
+                        },
+                        self.current_token.line,
+                        self.current_token.col,
+                    )),
+                    right: Box::new(right),
+                },
+                self.current_token.line,
+                self.current_token.col,
+            ));
         }
 
-        Ok(Expression::new(ExprType::Index {
-            left: Box::new(left),
-            index: Box::new(index),
-        }, self.current_token.line, self.current_token.col))
+        Ok(Expression::new(
+            ExprType::Index {
+                left: Box::new(left),
+                index: Box::new(index),
+            },
+            self.current_token.line,
+            self.current_token.col,
+        ))
     }
-    
-    fn parse_while_loop(&mut self) -> Result<Expression, ParserError>{
+
+    fn parse_while_loop(&mut self) -> Result<Expression, ParserError> {
         self.next_token();
 
         let conditional_expr = self.parse_expression(Precedence::Lowest)?;
@@ -729,9 +809,13 @@ impl Parser {
 
         let consequence_stmts = self.parse_block_statement()?;
 
-        Ok(Expression::new(ExprType::While {
-            condition: Box::new(conditional_expr),
-            body: consequence_stmts,
-        }, self.current_token.line, self.current_token.col))
+        Ok(Expression::new(
+            ExprType::While {
+                condition: Box::new(conditional_expr),
+                body: consequence_stmts,
+            },
+            self.current_token.line,
+            self.current_token.col,
+        ))
     }
 }

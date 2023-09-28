@@ -1,5 +1,5 @@
-use std::{collections::HashMap, fmt::Display};
 use std::hash::Hash;
+use std::{collections::HashMap, fmt::Display};
 
 use crate::{token::TokenType, types::Numeric};
 
@@ -9,11 +9,13 @@ use super::statement::BlockStatement;
 pub struct Expression {
     pub r#type: ExprType,
     pub line: usize,
-    pub col: usize
+    pub col: usize,
 }
 
 impl Expression {
-    pub fn new(r#type: ExprType, line: usize, col: usize) -> Self { Self { r#type, line, col } }
+    pub fn new(r#type: ExprType, line: usize, col: usize) -> Self {
+        Self { r#type, line, col }
+    }
 }
 
 impl PartialEq for Expression {
@@ -145,7 +147,11 @@ impl PartialEq for ExprType {
                     right: r_right,
                     operator: r_operator,
                 },
-            ) => l_left.r#type == r_left.r#type && l_right.r#type == r_right.r#type && l_operator == r_operator,
+            ) => {
+                l_left.r#type == r_left.r#type
+                    && l_right.r#type == r_right.r#type
+                    && l_operator == r_operator
+            }
             (Self::If { .. }, Self::If { .. }) => {
                 panic!("No se puede comparar bloques condicionales")
             }
@@ -178,7 +184,9 @@ impl Display for ExprType {
                 function,
                 arguments,
             } => write!(f, "{}({})", function.r#type, format_arguments(arguments)),
-            ExprType::Assignment { left, right } => write!(f, "{} = {};", left.r#type, right.r#type),
+            ExprType::Assignment { left, right } => {
+                write!(f, "{} = {};", left.r#type, right.r#type)
+            }
             ExprType::StringLiteral(string) => write!(f, "\"{}\"", string),
             ExprType::ListLiteral { elements } => write!(f, "[{}]", format_arguments(elements)),
             ExprType::Index { left, index } => write!(f, "{}[{}]", left.r#type, index.r#type),

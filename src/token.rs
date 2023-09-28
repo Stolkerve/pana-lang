@@ -50,7 +50,7 @@ pub enum TokenType {
     True,
     False,
     Null,
-    While
+    While,
 }
 
 // impl Eq for TokenType {
@@ -127,11 +127,17 @@ pub fn keywords_to_tokens(v: &str) -> TokenType {
         "verdad" => TokenType::True,
         "falso" => TokenType::False,
         "nulo" => TokenType::Null,
-        "para" => TokenType::IllegalMsg("La palabra clave `para` no esta implementada aun".to_owned()),
+        "para" => {
+            TokenType::IllegalMsg("La palabra clave `para` no esta implementada aun".to_owned())
+        }
         "mientras" => TokenType::While,
         "en" => TokenType::IllegalMsg("La palabra clave `en` no esta implementada aun".to_owned()),
-        "continuar" => TokenType::IllegalMsg("La palabra clave `continuar` no esta implementada aun".to_owned()),
-        "romper" => TokenType::IllegalMsg("La palabra clave `romper` no esta implementada aun".to_owned()),
+        "continuar" => TokenType::IllegalMsg(
+            "La palabra clave `continuar` no esta implementada aun".to_owned(),
+        ),
+        "romper" => {
+            TokenType::IllegalMsg("La palabra clave `romper` no esta implementada aun".to_owned())
+        }
         _ => TokenType::Ident(v.to_owned()),
     }
 }
