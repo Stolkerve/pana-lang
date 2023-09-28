@@ -282,7 +282,7 @@ impl Lexer {
             '-' => Token::new(TokenType::Minus, self.line, self.col),
             '/' => Token::new(TokenType::Slash, self.line, self.col),
             '*' => Token::new(TokenType::Asterisk, self.line, self.col),
-            '!' => self.read_2chars_token('=', TokenType::Eq, TokenType::Bang),
+            '!' => self.read_2chars_token('=', TokenType::NotEq, TokenType::Bang),
             '<' => self.read_2chars_token('=', TokenType::LtEq, TokenType::Lt),
             '>' => self.read_2chars_token('=', TokenType::GtEq, TokenType::Gt),
             ',' => Token::new(TokenType::Comma, self.line, self.col),
