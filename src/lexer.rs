@@ -12,7 +12,6 @@ pub enum NumericType {
     Binary,
 }
 
-#[allow(dead_code)]
 pub struct Lexer {
     input: Vec<char>,
     current_pos: usize,
@@ -23,7 +22,6 @@ pub struct Lexer {
     identifier_regex: Regex,
 }
 
-#[allow(dead_code)]
 impl Lexer {
     pub fn new(input: Vec<char>) -> Self {
         Self {
