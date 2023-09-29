@@ -63,6 +63,24 @@ var total = sumar(1, 2) * resta(4, 5);
 #Lo mismo pero en otra linea.
 var a = ""; #Ahora digo que hace esta variable, nada.
 ```
+### While loops
+```
+mientras verdad {
+    imprimir("Hola mundo");
+}
+```
+### for loops
+```
+# Fibonacci
+var a = 0;
+var b = 1;
+para i en rango(30) {
+    var c = a + b;
+    a = b;
+    b = c;
+    imprimir(b);
+}
+```
 # Tipo de datos
 ```
 # Numerico
@@ -165,7 +183,7 @@ cadena(10) # -> "10"
 - ✅ ️️Referencias a listas y diccionarios.
 - ✅️ Mejora en los mensajes de error con columna y linea
 - ✅️ Cambiar el tipo de dato entero a numerico
-- ⬜ bucle for range: para i en rango(10).
+- ✅ bucle for range: para i en rango(10).
 - ✅ bucle while: mientras i < 10.
 - ⬜ Keyword break: romper.
 - ⬜ Keyword continue: continuar.
