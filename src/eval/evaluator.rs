@@ -783,7 +783,7 @@ impl Evaluator {
         }
 
         let iter_obj: ResultObj;
-        // let initPos: i64;
+        let mut init_pos: usize = 0;
         // let steps: i64;
         match arguments.len() {
             1 => {
@@ -795,7 +795,45 @@ impl Evaluator {
                     return iter_obj;
                 }
             }
-            2 => todo!("Falta implementar la posicion inicial del rango"),
+            2 => {
+                let expr = arguments.remove(0);
+                line = expr.line;
+                col = expr.col;
+                iter_obj = self.eval_expression(expr, env);
+                if self.is_error(&iter_obj) {
+                    return iter_obj;
+                }
+
+                let expr = arguments.remove(0);
+                match self.eval_expression(expr, env) {
+                    ResultObj::Copy(obj) => match obj {
+                        Object::Numeric(Numeric::Int(int)) => init_pos = int as usize,
+                        Object::Error(err) => return ResultObj::Copy(Object::Error(err)),
+                        obj => {
+                            return ResultObj::Copy(Object::Error(self.create_msg_err(
+                                format!(
+                                    "No se soporta operaciones de rango con el tipo de dato `{}`",
+                                    obj.get_type()
+                                ),
+                                line,
+                                col,
+                            )))
+                        }
+                    },
+                    ResultObj::Ref(obj) => match obj.borrow() {
+                        obj => {
+                            return ResultObj::Copy(Object::Error(self.create_msg_err(
+                                format!(
+                                    "No se soporta operaciones de rango con el tipo de dato `{}`",
+                                    obj.get_type()
+                                ),
+                                line,
+                                col,
+                            )))
+                        }
+                    },
+                };
+            }
             3 => todo!("Falta implementar los pasos del rango"),
             _ => {
                 return ResultObj::Copy(Object::Error(format!(
@@ -809,12 +847,12 @@ impl Evaluator {
         match iter_obj {
             ResultObj::Copy(obj) => match obj {
                 Object::Numeric(Numeric::Int(end)) => {
-                    for i in 0 as i64..end {
+                    for i in init_pos..end as usize {
                         let scope_env = Rc::new(RefCell::new(Environment::new(Some(env.clone()))));
                         // let elem_obj = self.eval_var(&ident, Expression::new(ExprType::NumericLiteral(Numeric::Int(i)), line, col + 1), &scope_env);
                         let elem_obj = self.insert_obj(
                             &ident,
-                            ResultObj::Copy(Object::Numeric(Numeric::Int(i))),
+                            ResultObj::Copy(Object::Numeric(Numeric::Int(i as i64))),
                             &scope_env,
                         );
 
@@ -839,19 +877,6 @@ impl Evaluator {
                 }
             },
             ResultObj::Ref(obj) => match obj.borrow_mut().to_owned() {
-                Object::List(mut list) => {
-                    while list.len() != 0 {
-                        let scope_env = Rc::new(RefCell::new(Environment::new(Some(env.clone()))));
-                        let elem_obj = self.insert_obj(&ident, list.remove(0), &scope_env);
-                        if self.is_error(&elem_obj) {
-                            return elem_obj;
-                        }
-                        let obj = self.eval_block_statement(body.borrow().clone(), &scope_env);
-                        if self.is_error(&obj) {
-                            return obj;
-                        }
-                    }
-                }
                 obj => {
                     return ResultObj::Copy(Object::Error(self.create_msg_err(
                         format!(
