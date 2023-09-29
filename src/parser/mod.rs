@@ -14,7 +14,6 @@ use self::{
     statement::{BlockStatement, Statement},
 };
 
-#[allow(dead_code)]
 #[repr(u32)]
 #[derive(Clone, Copy, Debug)]
 enum Precedence {
@@ -29,7 +28,6 @@ enum Precedence {
     Member = 8,      // foo()
 }
 
-#[allow(dead_code)]
 fn to_tokens_precedence(token: &TokenType) -> Precedence {
     match token {
         TokenType::Plus => Precedence::SumSub,
@@ -49,7 +47,6 @@ fn to_tokens_precedence(token: &TokenType) -> Precedence {
     }
 }
 
-#[allow(dead_code)]
 pub struct Parser {
     lexer: Lexer,
     current_token: Token,
@@ -57,7 +54,6 @@ pub struct Parser {
     pub error: Option<ParserError>,
 }
 
-#[allow(dead_code)]
 impl Parser {
     pub fn new(lexer: Lexer) -> Self {
         Self {
@@ -120,6 +116,17 @@ impl Parser {
                 return Some(ParserError::Illegal(self.peek_token.clone()));
             }
             None
+        }
+    }
+
+    fn read_identifier(&self) -> Result<String, ParserError> {
+        if let TokenType::Ident(ident) = self.peek_token.r#type.clone() {
+            Ok(ident.to_string())
+        } else {
+            return Err(ParserError::MissingIdentifier(
+                self.current_token.line,
+                self.current_token.col,
+            ));
         }
     }
 
@@ -188,16 +195,7 @@ impl Parser {
     }
 
     fn parse_var_statement(&mut self) -> Result<Statement, ParserError> {
-        let identifier: String;
-
-        if let TokenType::Ident(ident) = self.peek_token.r#type.clone() {
-            identifier = ident.to_string();
-        } else {
-            return Err(ParserError::MissingIdentifier(
-                self.current_token.line,
-                self.current_token.col,
-            ));
-        }
+        let identifier = self.read_identifier()?;
 
         self.next_token();
 
@@ -390,6 +388,7 @@ impl Parser {
 
                 TokenType::If => self.parse_if_expression(),
                 TokenType::While => self.parse_while_loop(),
+                TokenType::For => self.parse_range_loop(),
                 TokenType::Func => self.parse_fn_literal(),
                 TokenType::IllegalMsg(msg) => Err(ParserError::IllegalMsg(
                     msg.to_owned(),
@@ -817,5 +816,48 @@ impl Parser {
             self.current_token.line,
             self.current_token.col,
         ))
+    }
+
+    fn parse_range_loop(&mut self)-> Result<Expression, ParserError> {
+        let line = self.peek_token.line;
+        let col = self.peek_token.col;
+        let identifier = self.read_identifier()?;
+        self.next_token();
+
+        if !self.expected_peek(TokenType::In) {
+            // TODO!! Cambiar a error adecuado
+            return Err(ParserError::MissingIn(
+                self.current_token.line,
+                self.current_token.col,
+            ));
+        }
+
+        if !self.expected_peek(TokenType::Range) {
+            // TODO!! Cambiar a error adecuado
+            return Err(ParserError::MissingRange(
+                self.current_token.line,
+                self.current_token.col,
+            ));
+        }
+        if !self.expected_peek(TokenType::LParen) {
+            // TODO!! Cambiar a error adecuado
+            return Err(ParserError::MissingLeftParen(
+                self.current_token.line,
+                self.current_token.col,
+            ));
+        }
+
+        let arguments =
+            self.parse_expression_list(TokenType::RParen, ParserError::MissingRightParen(0, 0))?;
+
+        if !self.expected_peek(TokenType::LBrace) {
+            return Err(ParserError::MissingLeftBrace(
+                self.current_token.line,
+                self.current_token.col,
+            ));
+        }
+        let consequence_stmts = self.parse_block_statement()?;
+
+        Ok(Expression::new(ExprType::ForRange { ident: identifier, arguments, body: consequence_stmts }, line, col))
     }
 }

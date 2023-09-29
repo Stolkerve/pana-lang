@@ -2,11 +2,12 @@ use std::fmt::Display;
 
 use crate::token::Token;
 
-#[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 pub enum ParserError {
     Illegal(Token),
     IllegalMsg(String, usize, usize),
+    MissingIn(usize, usize),
+    MissingRange(usize, usize),
     MissingIdentifier(usize, usize),
     MissingAssign(usize, usize),
     MissingColon(usize, usize),
@@ -95,6 +96,12 @@ impl Display for ParserError {
             ParserError::IllegalMsg(msg, line, col) => {
                 write!(f, "{}", create_syntax_err(msg, line, col))
             }
+            ParserError::MissingIn(line, col) => {
+                write!(f, "{}", create_syntax_err("Falta la palabra clave `en`", line, col))
+            },
+            ParserError::MissingRange(line, col) => {
+                write!(f, "{}", create_syntax_err("Falta la palabra clave `rango`", line, col))
+            },
         }
     }
 }

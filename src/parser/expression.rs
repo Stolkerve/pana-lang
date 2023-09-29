@@ -32,7 +32,6 @@ impl Hash for Expression {
     }
 }
 
-#[allow(dead_code)]
 pub fn format_arguments(exprs: &[Expression]) -> String {
     exprs
         .iter()
@@ -43,7 +42,6 @@ pub fn format_arguments(exprs: &[Expression]) -> String {
 
 pub type FnParams = Vec<Expression>;
 
-#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum ExprType {
     Identifier(String),
@@ -90,6 +88,11 @@ pub enum ExprType {
     Assignment {
         left: Box<Expression>,
         right: Box<Expression>,
+    },
+    ForRange {
+        ident: String,
+        arguments: FnParams,
+        body: BlockStatement,
     },
 }
 
@@ -201,6 +204,7 @@ impl Display for ExprType {
                     .join(", ")
             ),
             ExprType::While { condition, .. } => write!(f, "mientras {} {{...}}", condition.r#type),
+            ExprType::ForRange { ident, arguments, ..} => write!(f, "para {} en rango({}) {{...}}", ident, format_arguments(arguments) ),
         }
     }
 }

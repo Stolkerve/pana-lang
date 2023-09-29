@@ -1,7 +1,6 @@
 use crate::types::Numeric;
 use std::fmt::Display;
 
-#[allow(dead_code)]
 #[derive(PartialEq, Clone, Debug)]
 pub enum TokenType {
     Illegal(char),
@@ -51,24 +50,10 @@ pub enum TokenType {
     False,
     Null,
     While,
+    For,
+    In,
+    Range,
 }
-
-// impl Eq for TokenType {
-// }
-
-// impl PartialEq for TokenType {
-//     fn ne(&self, other: &Self) -> bool {
-//         !self.eq(other)
-//     }
-
-//     fn eq(&self, other: &Self) -> bool {
-//         match (self, other) {
-//             (TokenType::Illegal(c), TokenType::Illegal(c2)) => c == c2,
-//             (TokenType::IllegalMsg(msg), TokenType::IllegalMsg(msg2)) => msg == msg2,
-//            (t, t2) =>  t == t2
-//         }
-//     }
-// }
 
 impl Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -112,11 +97,13 @@ impl Display for TokenType {
             TokenType::IllegalMsg(msg) => write!(f, "{}", msg),
             TokenType::NewLine => write!(f, "\\n"),
             TokenType::While => write!(f, "mientras"),
+            TokenType::For => write!(f, "para"),
+            TokenType::In => write!(f, "en"),
+            TokenType::Range => write!(f, "rango"),
         }
     }
 }
 
-#[allow(dead_code)]
 pub fn keywords_to_tokens(v: &str) -> TokenType {
     match v {
         "var" => TokenType::Var,
@@ -127,11 +114,10 @@ pub fn keywords_to_tokens(v: &str) -> TokenType {
         "verdad" => TokenType::True,
         "falso" => TokenType::False,
         "nulo" => TokenType::Null,
-        "para" => {
-            TokenType::IllegalMsg("La palabra clave `para` no esta implementada aun".to_owned())
-        }
+        "para" => TokenType::For,
+        "en" => TokenType::In,
+        "rango" => TokenType::Range,
         "mientras" => TokenType::While,
-        "en" => TokenType::IllegalMsg("La palabra clave `en` no esta implementada aun".to_owned()),
         "continuar" => TokenType::IllegalMsg(
             "La palabra clave `continuar` no esta implementada aun".to_owned(),
         ),
@@ -149,7 +135,6 @@ pub struct Token {
     pub col: usize,
 }
 
-#[allow(dead_code)]
 impl Token {
     pub fn new(r#type: TokenType, line: usize, col: usize) -> Self {
         Self { r#type, line, col }

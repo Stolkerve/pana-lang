@@ -153,6 +153,7 @@ impl Evaluator {
             ExprType::NullLiteral => ResultObj::Copy(Object::Null),
             ExprType::DictionaryLiteral { pairs } => self.eval_dictionary_expression(pairs, env),
             ExprType::While { condition, body } => self.eval_while_loop(*condition, body, env),
+            ExprType::ForRange { ident, arguments, body } => self.eval_for_range(ident, arguments, body, expr.line, expr.col, env),
         }
     }
 
@@ -738,7 +739,7 @@ impl Evaluator {
         while condition_res {
             let scope_env = Rc::new(RefCell::new(Environment::new(Some(env.clone()))));
             let obj = self.eval_block_statement(body.borrow().clone(), &scope_env);
-            if let ResultObj::Copy(Object::Error(_)) = obj {
+            if self.is_error(&obj) {
                 return obj;
             }
             let condition_obj = self.eval_expression(condition_ref.borrow().clone(), env);
@@ -753,6 +754,57 @@ impl Evaluator {
                 }
             };
         }
+        ResultObj::Copy(Object::Void)
+    }
+
+    fn eval_for_range(&mut self, ident: String, mut arguments: Vec<Expression>, body: Vec<Statement>, line: usize, col: usize, env: &RcEnvironment) -> ResultObj {
+        if self.exist_var(&ident, env) {
+            return ResultObj::Copy(Object::Error(self.create_msg_err(
+                format!("Ya existe referencias hacia la variable `{}`", ident),
+                line,
+                col,
+            )));
+        }
+        
+        let iter_obj: ResultObj;
+        // let initPos: i64;
+        // let steps: i64;
+        match arguments.len() {
+            1 => {
+                iter_obj = self.eval_expression(arguments.remove(0), env);
+                if self.is_error(&iter_obj) {
+                    return iter_obj;
+                }
+            },
+            2 => todo!("Falta implementar la posicion inicial del rango"),
+            3 => todo!("Falta implementar los pasos del rango"),
+            _ => todo!("Falta mensaje de error por cantidad de argumentos en el rango")
+        }
+
+        match iter_obj {
+            ResultObj::Copy(obj) => match obj {
+                Object::Numeric(Numeric::Int(end)) => {
+                    let body = Rc::new(RefCell::new(body));
+                    for i in 0 as i64..end {
+                        let scope_env = Rc::new(RefCell::new(Environment::new(Some(env.clone()))));
+                        let elem_obj = self.eval_var(&ident, Expression::new(ExprType::NumericLiteral(Numeric::Int(i)), line, col + 1), &scope_env);
+                        if self.is_error(&elem_obj) {
+                            return elem_obj;
+                        }
+                        let obj = self.eval_block_statement(body.borrow().clone(), &scope_env);
+                        if self.is_error(&obj) {
+                            return obj;
+                        }
+                    }
+                }   
+                _ => todo!("No se soporta operaciones de rango con ese tipo de dato")
+            },
+            ResultObj::Ref(obj) => match *obj.borrow() {
+                Object::List(_) => todo!(),
+                _ => todo!("No se soporta operaciones de rango con ese tipo de dato")
+            },
+        }
+
         ResultObj::Copy(Object::Void)
     }
 }

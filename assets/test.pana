@@ -1,15 +1,19 @@
 # Ejemplo de fibonacci
 
-var a = 0;
-var b = 1;
-var límite = 10;
-var i = 0;
-mientras i != límite {
-    imprimir(b);
-    var c = a + b;
-    a = b;
-    b = c;
-    i = i + 1;
+para i en rango(10) {
+    imprimir(i);
 }
 
-imprimir(b);
+#var a = 0;
+#var b = 1;
+#var límite = 10;
+#var i = 0;
+#mientras i != límite {
+#    imprimir(b);
+#    var c = a + b;
+#    a = b;
+#    b = c;
+#    i = i + 1;
+#}
+#
+#imprimir(b);
