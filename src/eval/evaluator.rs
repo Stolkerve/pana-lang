@@ -642,7 +642,13 @@ impl Evaluator {
     ) -> ResultObj {
         let line = left.line;
         let col = left.col;
+        let index_line = index.line;
+        let index_col = index.col;
         let left_obj = self.eval_expression(left, env);
+        let index_obj = self.eval_expression(index, env);
+        if self.is_error(&index_obj) {
+            return index_obj;
+        }
         match left_obj {
             ResultObj::Copy(obj) => match obj {
                 Object::Error(msg) => ResultObj::Copy(Object::Error(msg)),
@@ -657,7 +663,7 @@ impl Evaluator {
             },
             ResultObj::Ref(obj) => match *obj.borrow_mut() {
                 Object::List(ref mut objs) => {
-                    if let ExprType::NumericLiteral(Numeric::Int(index)) = index.r#type {
+                    if let ResultObj::Copy(Object::Numeric(Numeric::Int(index))) = index_obj {
                         if let Some(new_value) = new_value {
                             if (index as usize) < objs.len() {
                                 objs[index as usize] = new_value.clone();
@@ -672,17 +678,17 @@ impl Evaluator {
                     }
                     ResultObj::Copy(Object::Error(self.create_msg_err(
                         "El operador de indexar solo opera con enteros".to_owned(),
-                        index.line,
-                        index.col,
+                        index_line,
+                        index_col,
                     )))
                 }
                 Object::Dictionary(ref pairs) => {
-                    match pairs.get(&self.eval_expression(index.clone(), env)) {
+                    match pairs.get(&index_obj) {
                         Some(obj) => obj.clone(),
                         None => ResultObj::Copy(Object::Error(self.create_msg_err(
-                            format!("Llave invalida {}", index.r#type),
-                            index.line,
-                            index.col,
+                            format!("Llave invalida {}", index_obj.get_type()),
+                            index_line,
+                            index_col,
                         ))),
                     }
                 }
@@ -849,12 +855,12 @@ impl Evaluator {
                 Object::Numeric(Numeric::Int(end)) => {
                     for i in init_pos..end as usize {
                         let scope_env = Rc::new(RefCell::new(Environment::new(Some(env.clone()))));
-                        // let elem_obj = self.eval_var(&ident, Expression::new(ExprType::NumericLiteral(Numeric::Int(i)), line, col + 1), &scope_env);
-                        let elem_obj = self.insert_obj(
-                            &ident,
-                            ResultObj::Copy(Object::Numeric(Numeric::Int(i as i64))),
-                            &scope_env,
-                        );
+                        let elem_obj = self.eval_var(&ident, Expression::new(ExprType::NumericLiteral(Numeric::Int(i as i64)), line, col + 1), &scope_env);
+                        // let elem_obj = self.insert_obj(
+                        //     &ident,
+                        //     ResultObj::Copy(Object::Numeric(Numeric::Int(i as i64))),
+                        //     &scope_env,
+                        // );
 
                         if self.is_error(&elem_obj) {
                             return elem_obj;
