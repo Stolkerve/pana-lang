@@ -52,6 +52,9 @@ impl Evaluator {
     }
 
     pub fn create_msg_err(&self, msg: String, line: usize, col: usize) -> String {
+        if msg.chars().nth(0).unwrap() == '^' {
+            return msg[1..].to_string();
+        }
         format!(
             "Error de ejecución. {}. Linea {}, columna {}.",
             msg, line, col
@@ -280,7 +283,8 @@ impl Evaluator {
                 }
                 _ => panic!("Ok, no se ocurre como llamar este error."),
             },
-
+            (ResultObj::Copy(Object::Error(msg)), _) => ResultObj::Copy(Object::Error("^".to_string()+&msg)),
+            (_, ResultObj::Copy(Object::Error(msg))) => ResultObj::Copy(Object::Error("^".to_string()+&msg)),
             (ResultObj::Copy(Object::Null), ResultObj::Copy(Object::Null)) => {
                 self.eval_infix_null_operation(operator)
             }
