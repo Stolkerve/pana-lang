@@ -175,34 +175,54 @@ impl Lexer {
         let mut token = Token::new(TokenType::Numeric(Numeric::Int(0)), self.line, self.col);
 
         token.r#type = match state {
-            NumericType::Integers => {
-                TokenType::Numeric(Numeric::Int(self.input[start..end].iter().collect::<String>().parse().unwrap()))
-            }
+            NumericType::Integers => TokenType::Numeric(Numeric::Int(
+                self.input[start..end]
+                    .iter()
+                    .collect::<String>()
+                    .parse()
+                    .unwrap(),
+            )),
             NumericType::Floats => TokenType::Numeric(Numeric::Float(
-                self.input[start..end].iter().collect::<String>().parse::<f64>().unwrap(),
+                self.input[start..end]
+                    .iter()
+                    .collect::<String>()
+                    .parse::<f64>()
+                    .unwrap(),
             )),
             NumericType::Hexadecimal => {
-                if let Ok(int) =
-                    i64::from_str_radix(self.input[start..end].iter().collect::<String>().trim_start_matches("0x"), 16)
-                {
+                if let Ok(int) = i64::from_str_radix(
+                    self.input[start..end]
+                        .iter()
+                        .collect::<String>()
+                        .trim_start_matches("0x"),
+                    16,
+                ) {
                     TokenType::Numeric(Numeric::Int(int))
                 } else {
                     TokenType::IllegalMsg("Formato de numero invalido".to_owned())
                 }
             }
             NumericType::Octadecimal => {
-                if let Ok(int) =
-                    i64::from_str_radix(self.input[start..end].iter().collect::<String>().trim_start_matches("0o"), 8)
-                {
+                if let Ok(int) = i64::from_str_radix(
+                    self.input[start..end]
+                        .iter()
+                        .collect::<String>()
+                        .trim_start_matches("0o"),
+                    8,
+                ) {
                     TokenType::Numeric(Numeric::Int(int))
                 } else {
                     TokenType::IllegalMsg("Formato de numero invalido".to_owned())
                 }
             }
             NumericType::Binary => {
-                if let Ok(int) =
-                    i64::from_str_radix(self.input[start..end].iter().collect::<String>().trim_start_matches("0b"), 2)
-                {
+                if let Ok(int) = i64::from_str_radix(
+                    self.input[start..end]
+                        .iter()
+                        .collect::<String>()
+                        .trim_start_matches("0b"),
+                    2,
+                ) {
                     TokenType::Numeric(Numeric::Int(int))
                 } else {
                     TokenType::Numeric(Numeric::Int(1))
@@ -224,10 +244,14 @@ impl Lexer {
             self.read_char();
             end += 1;
         }
-        
-        let str_size: usize = self.input[start..end].iter().fold(0, |c1, c2| c1 + char::len_utf8(*c2));
 
-        let ident = &self.input[start..start + str_size].iter().collect::<String>();
+        let str_size: usize = self.input[start..end]
+            .iter()
+            .fold(0, |c1, c2| c1 + char::len_utf8(*c2));
+
+        let ident = &self.input[start..start + str_size]
+            .iter()
+            .collect::<String>();
         if self.identifier_regex.is_match(ident) {
             return Token::new(keywords_to_tokens(ident), self.line, self.col);
         }

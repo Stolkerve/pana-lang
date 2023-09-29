@@ -97,11 +97,19 @@ impl Display for ParserError {
                 write!(f, "{}", create_syntax_err(msg, line, col))
             }
             ParserError::MissingIn(line, col) => {
-                write!(f, "{}", create_syntax_err("Falta la palabra clave `en`", line, col))
-            },
+                write!(
+                    f,
+                    "{}",
+                    create_syntax_err("Falta la palabra clave `en`", line, col)
+                )
+            }
             ParserError::MissingRange(line, col) => {
-                write!(f, "{}", create_syntax_err("Falta la palabra clave `rango`", line, col))
-            },
+                write!(
+                    f,
+                    "{}",
+                    create_syntax_err("Falta la palabra clave `rango`", line, col)
+                )
+            }
         }
     }
 }

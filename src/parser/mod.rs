@@ -818,7 +818,7 @@ impl Parser {
         ))
     }
 
-    fn parse_range_loop(&mut self)-> Result<Expression, ParserError> {
+    fn parse_range_loop(&mut self) -> Result<Expression, ParserError> {
         let line = self.peek_token.line;
         let col = self.peek_token.col;
         let identifier = self.read_identifier()?;
@@ -858,6 +858,14 @@ impl Parser {
         }
         let consequence_stmts = self.parse_block_statement()?;
 
-        Ok(Expression::new(ExprType::ForRange { ident: identifier, arguments, body: consequence_stmts }, line, col))
+        Ok(Expression::new(
+            ExprType::ForRange {
+                ident: identifier,
+                arguments,
+                body: consequence_stmts,
+            },
+            line,
+            col,
+        ))
     }
 }

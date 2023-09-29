@@ -204,7 +204,14 @@ impl Display for ExprType {
                     .join(", ")
             ),
             ExprType::While { condition, .. } => write!(f, "mientras {} {{...}}", condition.r#type),
-            ExprType::ForRange { ident, arguments, ..} => write!(f, "para {} en rango({}) {{...}}", ident, format_arguments(arguments) ),
+            ExprType::ForRange {
+                ident, arguments, ..
+            } => write!(
+                f,
+                "para {} en rango({}) {{...}}",
+                ident,
+                format_arguments(arguments)
+            ),
         }
     }
 }
