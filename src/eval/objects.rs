@@ -68,11 +68,14 @@ impl Object {
     pub fn get_type(&self) -> String {
         match self {
             Object::Numeric(n) => {
-                format!("numerico {}", match n {
-                    Numeric::Int(_) => String::from("entero"),
-                    Numeric::Float(_) => String::from("entero"),
-                })
-            },
+                format!(
+                    "numerico {}",
+                    match n {
+                        Numeric::Int(_) => String::from("entero"),
+                        Numeric::Float(_) => String::from("entero"),
+                    }
+                )
+            }
             Object::Boolean(_) => "logico".to_owned(),
             Object::Error(_) => "error".to_owned(),
             Object::String(_) => "cadena".to_owned(),
