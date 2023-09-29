@@ -4,7 +4,7 @@ var a = 0;
 var b = 1;
 var límite = 10;
 var i = 0;
-mientras i != lmite {
+mientras i != límite {
     imprimir(b);
     var c = a + b;
     a = b;
