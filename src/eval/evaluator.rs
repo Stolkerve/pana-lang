@@ -153,7 +153,11 @@ impl Evaluator {
             ExprType::NullLiteral => ResultObj::Copy(Object::Null),
             ExprType::DictionaryLiteral { pairs } => self.eval_dictionary_expression(pairs, env),
             ExprType::While { condition, body } => self.eval_while_loop(*condition, body, env),
-            ExprType::ForRange { ident, arguments, body } => self.eval_for_range(ident, arguments, body, expr.line, expr.col, env),
+            ExprType::ForRange {
+                ident,
+                arguments,
+                body,
+            } => self.eval_for_range(ident, arguments, body, expr.line, expr.col, env),
         }
     }
 
@@ -284,8 +288,12 @@ impl Evaluator {
                 }
                 _ => panic!("Ok, no se ocurre como llamar este error."),
             },
-            (ResultObj::Copy(Object::Error(msg)), _) => ResultObj::Copy(Object::Error("^".to_string()+&msg)),
-            (_, ResultObj::Copy(Object::Error(msg))) => ResultObj::Copy(Object::Error("^".to_string()+&msg)),
+            (ResultObj::Copy(Object::Error(msg)), _) => {
+                ResultObj::Copy(Object::Error("^".to_string() + &msg))
+            }
+            (_, ResultObj::Copy(Object::Error(msg))) => {
+                ResultObj::Copy(Object::Error("^".to_string() + &msg))
+            }
             (ResultObj::Copy(Object::Null), ResultObj::Copy(Object::Null)) => {
                 self.eval_infix_null_operation(operator)
             }
@@ -757,7 +765,15 @@ impl Evaluator {
         ResultObj::Copy(Object::Void)
     }
 
-    fn eval_for_range(&mut self, ident: String, mut arguments: Vec<Expression>, body: Vec<Statement>, line: usize, col: usize, env: &RcEnvironment) -> ResultObj {
+    fn eval_for_range(
+        &mut self,
+        ident: String,
+        mut arguments: Vec<Expression>,
+        body: Vec<Statement>,
+        mut line: usize,
+        mut col: usize,
+        env: &RcEnvironment,
+    ) -> ResultObj {
         if self.exist_var(&ident, env) {
             return ResultObj::Copy(Object::Error(self.create_msg_err(
                 format!("Ya existe referencias hacia la variable `{}`", ident),
@@ -765,29 +781,38 @@ impl Evaluator {
                 col,
             )));
         }
-        
+
         let iter_obj: ResultObj;
         // let initPos: i64;
         // let steps: i64;
         match arguments.len() {
             1 => {
-                iter_obj = self.eval_expression(arguments.remove(0), env);
+                let expr = arguments.remove(0);
+                line = expr.line;
+                col = expr.col;
+                iter_obj = self.eval_expression(expr, env);
                 if self.is_error(&iter_obj) {
                     return iter_obj;
                 }
-            },
+            }
             2 => todo!("Falta implementar la posicion inicial del rango"),
             3 => todo!("Falta implementar los pasos del rango"),
-            _ => todo!("Falta mensaje de error por cantidad de argumentos en el rango")
+            _ => todo!("Falta mensaje de error por cantidad de argumentos en el rango"),
         }
 
+        let body = Rc::new(RefCell::new(body));
         match iter_obj {
             ResultObj::Copy(obj) => match obj {
                 Object::Numeric(Numeric::Int(end)) => {
-                    let body = Rc::new(RefCell::new(body));
                     for i in 0 as i64..end {
                         let scope_env = Rc::new(RefCell::new(Environment::new(Some(env.clone()))));
-                        let elem_obj = self.eval_var(&ident, Expression::new(ExprType::NumericLiteral(Numeric::Int(i)), line, col + 1), &scope_env);
+                        // let elem_obj = self.eval_var(&ident, Expression::new(ExprType::NumericLiteral(Numeric::Int(i)), line, col + 1), &scope_env);
+                        let elem_obj = self.insert_obj(
+                            &ident,
+                            ResultObj::Copy(Object::Numeric(Numeric::Int(i))),
+                            &scope_env,
+                        );
+
                         if self.is_error(&elem_obj) {
                             return elem_obj;
                         }
@@ -796,12 +821,42 @@ impl Evaluator {
                             return obj;
                         }
                     }
-                }   
-                _ => todo!("No se soporta operaciones de rango con ese tipo de dato")
+                }
+                obj => {
+                    return ResultObj::Copy(Object::Error(self.create_msg_err(
+                        format!(
+                            "No se soporta operaciones de rango con el tipo de dato `{}`",
+                            obj.get_type()
+                        ),
+                        line,
+                        col,
+                    )))
+                }
             },
-            ResultObj::Ref(obj) => match *obj.borrow() {
-                Object::List(_) => todo!(),
-                _ => todo!("No se soporta operaciones de rango con ese tipo de dato")
+            ResultObj::Ref(obj) => match obj.borrow_mut().to_owned() {
+                Object::List(mut list) => {
+                    while list.len() != 0 {
+                        let scope_env = Rc::new(RefCell::new(Environment::new(Some(env.clone()))));
+                        let elem_obj = self.insert_obj(&ident, list.remove(0), &scope_env);
+                        if self.is_error(&elem_obj) {
+                            return elem_obj;
+                        }
+                        let obj = self.eval_block_statement(body.borrow().clone(), &scope_env);
+                        if self.is_error(&obj) {
+                            return obj;
+                        }
+                    }
+                }
+                obj => {
+                    return ResultObj::Copy(Object::Error(self.create_msg_err(
+                        format!(
+                            "No se soporta operaciones de rango con el tipo de dato `{}`",
+                            obj.get_type()
+                        ),
+                        line,
+                        col,
+                    )))
+                }
             },
         }
 
