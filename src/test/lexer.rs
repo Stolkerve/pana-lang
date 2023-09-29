@@ -5,7 +5,7 @@ use crate::{
 };
 
 fn gen_tokens(input: &str) -> Vec<Token> {
-    let mut lexer = Lexer::new(input.to_owned());
+    let mut lexer = Lexer::new(input.to_owned().chars().collect());
     let mut tokens = Vec::new();
     loop {
         let token = lexer.next_token();
