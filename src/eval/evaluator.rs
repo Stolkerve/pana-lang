@@ -332,6 +332,7 @@ impl Evaluator {
     }
 
     fn eval_infix_numeric_operation(&self, a: Numeric, b: Numeric, op: TokenType) -> ResultObj {
+        // TODO: Hay que ver si hay overflow!!! y mandar un mensaje de error adecuado
         match op {
             TokenType::Plus => ResultObj::Copy(Object::Numeric(a + b)),
             TokenType::Minus => ResultObj::Copy(Object::Numeric(a - b)),
