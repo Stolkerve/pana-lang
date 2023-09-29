@@ -1,11 +1,8 @@
 # Ejemplo de fibonacci
 
-para i en rango(10) {
-    imprimir(i);
-}
-imprimir();
-para i en rango(["a", {"dias": [0, 1, 2, 3, 4]}, "c", "d"]) {
-    imprimir(i);
+var lista = ["a", {"dias": [0, 1, 2, 3, 4]}, "c", "d"];
+para i en rango(longitud(lista)) {
+    imprimir(lista[i]);
 }
 
 #var a = 0;
