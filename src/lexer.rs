@@ -14,7 +14,7 @@ pub enum NumericType {
 
 #[allow(dead_code)]
 pub struct Lexer {
-    input: String,
+    input: Vec<char>,
     current_pos: usize,
     read_pos: usize,
     current_char: char,
@@ -25,7 +25,7 @@ pub struct Lexer {
 
 #[allow(dead_code)]
 impl Lexer {
-    pub fn new(input: String) -> Self {
+    pub fn new(input: Vec<char>) -> Self {
         Self {
             input,
             current_pos: 0,
@@ -34,25 +34,25 @@ impl Lexer {
             read_pos: 0,
             col: 0,
             // Recuerda reconocer bar_ como erroreneo
-            identifier_regex: Regex::new("^[a-zA-Z_][a-zA-Z0-9_]*$")
+            identifier_regex: Regex::new("^[a-zA-ZáéíóúñüÁÉÍÓÚÑÜ_][a-zA-Z0-9áéíóúñüÁÉÍÓÚÑÜ_]*$")
                 .expect("No compilo el regex de los identificadores"),
         }
     }
 
     fn read_char(&mut self) {
-        if let Some(c) = self.input.chars().nth(self.read_pos) {
-            self.current_char = c;
+        if let Some(c) = self.input.get(self.read_pos) {
+            self.current_char = *c;
         } else {
             self.current_char = '\0';
         }
 
         self.current_pos = self.read_pos;
-        self.read_pos += 1;
+        self.read_pos += char::len_utf8(self.current_char);
         self.col += 1;
     }
 
-    fn peek_char(&self) -> Option<char> {
-        self.input.chars().nth(self.read_pos)
+    fn peek_char(&self) -> Option<&char> {
+        self.input.get(self.read_pos)
     }
 
     fn skip_whitespace(&mut self) {
@@ -132,6 +132,7 @@ impl Lexer {
 
         let line = self.line;
         if let Some(c) = self.peek_char() {
+            let c = *c;
             if c == 'b' || c == 'o' || c == 'x' {
                 state = if c == 'b' {
                     NumericType::Binary
@@ -152,6 +153,7 @@ impl Lexer {
         }
 
         while let Some(c) = self.peek_char() {
+            let c = *c;
             if !c.is_ascii_digit() && !c.is_ascii_hexdigit() {
                 if c == '.' {
                     if state == NumericType::Floats {
@@ -173,16 +175,17 @@ impl Lexer {
         }
 
         let mut token = Token::new(TokenType::Numeric(Numeric::Int(0)), self.line, self.col);
+
         token.r#type = match state {
             NumericType::Integers => {
-                TokenType::Numeric(Numeric::Int(self.input[start..end].parse().unwrap()))
+                TokenType::Numeric(Numeric::Int(self.input[start..end].iter().collect::<String>().parse().unwrap()))
             }
             NumericType::Floats => TokenType::Numeric(Numeric::Float(
-                self.input[start..end].parse::<f64>().unwrap(),
+                self.input[start..end].iter().collect::<String>().parse::<f64>().unwrap(),
             )),
             NumericType::Hexadecimal => {
                 if let Ok(int) =
-                    i64::from_str_radix(self.input[start..end].trim_start_matches("0x"), 16)
+                    i64::from_str_radix(self.input[start..end].iter().collect::<String>().trim_start_matches("0x"), 16)
                 {
                     TokenType::Numeric(Numeric::Int(int))
                 } else {
@@ -191,7 +194,7 @@ impl Lexer {
             }
             NumericType::Octadecimal => {
                 if let Ok(int) =
-                    i64::from_str_radix(self.input[start..end].trim_start_matches("0o"), 8)
+                    i64::from_str_radix(self.input[start..end].iter().collect::<String>().trim_start_matches("0o"), 8)
                 {
                     TokenType::Numeric(Numeric::Int(int))
                 } else {
@@ -200,7 +203,7 @@ impl Lexer {
             }
             NumericType::Binary => {
                 if let Ok(int) =
-                    i64::from_str_radix(self.input[start..end].trim_start_matches("0b"), 2)
+                    i64::from_str_radix(self.input[start..end].iter().collect::<String>().trim_start_matches("0b"), 2)
                 {
                     TokenType::Numeric(Numeric::Int(int))
                 } else {
@@ -218,12 +221,15 @@ impl Lexer {
 
         while self
             .peek_char()
-            .map_or_else(|| false, |c| self.is_identifier(c))
+            .map_or_else(|| false, |c| self.is_identifier(*c))
         {
             self.read_char();
             end += 1;
         }
-        let ident = &self.input[start..end];
+        
+        let str_size: usize = self.input[start..end].iter().fold(0, |c1, c2| c1 + char::len_utf8(*c2));
+
+        let ident = &self.input[start..start + str_size].iter().collect::<String>();
         if self.identifier_regex.is_match(ident) {
             return Token::new(keywords_to_tokens(ident), self.line, self.col);
         }
@@ -245,7 +251,7 @@ impl Lexer {
             self.read_char();
             if self.current_char == '"' {
                 return Token::new(
-                    TokenType::String(self.input[start + 1..end].to_owned()),
+                    TokenType::String(self.input[start + 1..end].iter().collect::<String>()),
                     self.line,
                     self.col,
                 );
@@ -265,8 +271,8 @@ impl Lexer {
         posible_token: TokenType,
         default_token: TokenType,
     ) -> Token {
-        if let Some(char) = self.peek_char() {
-            if char == second_char {
+        if let Some(c) = self.peek_char() {
+            if *c == second_char {
                 self.read_char();
                 return Token::new(posible_token, self.line, self.col);
             }
@@ -276,7 +282,7 @@ impl Lexer {
 
     fn read_to_end_line(&mut self) -> Token {
         while let Some(c) = self.peek_char() {
-            if c == '\n' {
+            if *c == '\n' {
                 self.col = 0;
                 self.line += 1;
                 self.read_char();

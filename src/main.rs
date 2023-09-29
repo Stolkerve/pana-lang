@@ -33,7 +33,8 @@ fn main() {
         let mut evaluator = Evaluator::new();
         let file_str = fs::read_to_string(file_path)
             .expect(&format!("No es encotro el archivo {}", file_path));
-        let lexer = Lexer::new(file_str);
+
+        let lexer = Lexer::new(file_str.chars().collect());
         let mut parser = Parser::new(lexer);
         let program = parser.parse();
 
