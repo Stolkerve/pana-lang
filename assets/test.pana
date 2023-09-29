@@ -1,7 +1,7 @@
 # Ejemplo de fibonacci
 
 var lista = ["a", {"dias": [0, 1, 2, 3, 4]}, "c", "d"];
-para i en rango(longitud(lista)) {
+para i en rango(longitud(lista), 0, 1) {
     imprimir(lista[i]);
 }
 
