@@ -72,7 +72,7 @@ impl Object {
                     "numerico {}",
                     match n {
                         Numeric::Int(_) => String::from("entero"),
-                        Numeric::Float(_) => String::from("entero"),
+                        Numeric::Float(_) => String::from("flotante"),
                     }
                 )
             }
@@ -151,6 +151,15 @@ a un objeto como: List, Dictionary.
 pub enum ResultObj {
     Copy(Object),
     Ref(RcObject),
+}
+
+impl ResultObj {
+    pub fn get_type(&self) -> String {
+        match self {
+            ResultObj::Copy(obj) => obj.get_type(),
+            ResultObj::Ref(obj) => obj.borrow().get_type()
+        }
+    }
 }
 
 impl Hash for ResultObj {
