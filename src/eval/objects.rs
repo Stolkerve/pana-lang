@@ -65,12 +65,17 @@ impl PartialEq for Object {
 }
 
 impl Object {
-    pub fn get_type(&self) -> &str {
+    pub fn get_type(&self) -> String {
         match self {
-            Object::Numeric(_) => "numerico",
-            Object::Boolean(_) => "logico",
-            Object::Error(_) => "error",
-            Object::String(_) => "cadena",
+            Object::Numeric(n) => {
+                format!("numerico {}", match n {
+                    Numeric::Int(_) => String::from("entero"),
+                    Numeric::Float(_) => String::from("entero"),
+                })
+            },
+            Object::Boolean(_) => "logico".to_owned(),
+            Object::Error(_) => "error".to_owned(),
+            Object::String(_) => "cadena".to_owned(),
             Object::Return(obj) => {
                 match obj.as_ref() {
                     ResultObj::Copy(obj) => obj.get_type(),
@@ -79,13 +84,13 @@ impl Object {
                     // a.get_type()
                 }
             }
-            Object::FnExpr { .. } => "funcion",
-            Object::Fn { .. } => "funcion",
-            Object::BuildinFn { .. } => "funcion",
-            Object::Null => "nulo",
-            Object::Void => "vacio",
-            Object::List(_) => "lista",
-            Object::Dictionary { .. } => "diccionario",
+            Object::FnExpr { .. } => "funcion".to_owned(),
+            Object::Fn { .. } => "funcion".to_owned(),
+            Object::BuildinFn { .. } => "funcion".to_owned(),
+            Object::Null => "nulo".to_owned(),
+            Object::Void => "vacio".to_owned(),
+            Object::List(_) => "lista".to_owned(),
+            Object::Dictionary { .. } => "diccionario".to_owned(),
         }
     }
 }

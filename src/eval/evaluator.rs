@@ -797,7 +797,12 @@ impl Evaluator {
             }
             2 => todo!("Falta implementar la posicion inicial del rango"),
             3 => todo!("Falta implementar los pasos del rango"),
-            _ => todo!("Falta mensaje de error por cantidad de argumentos en el rango"),
+            _ => {
+                return ResultObj::Copy(Object::Error(format!(
+                    "Se encontro {} argumentos de 1..3",
+                    arguments.len()
+                )));
+            }
         }
 
         let body = Rc::new(RefCell::new(body));
