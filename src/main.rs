@@ -4,7 +4,7 @@ mod parser;
 mod token;
 mod types;
 
-use std::fs;
+use std::{fs, process::exit};
 
 use clap::{Arg, Command};
 use eval::{
@@ -40,14 +40,14 @@ fn main() {
 
         // Imprir error a nivel de parser
         if let Some(err) = parser.error {
-            println!("{}", err);
-            return;
+            eprintln!("{}", err);
+            exit(1);
         }
 
         // Imprimir error de runtime
         if let ResultObj::Copy(Object::Error(msg)) = evaluator.eval_program(program) {
-            println!("{}", msg);
-            return;
+            eprintln!("{}", msg);
+            exit(1);
         }
         return;
     }
