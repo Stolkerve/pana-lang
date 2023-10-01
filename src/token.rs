@@ -53,6 +53,8 @@ pub enum TokenType {
     For,
     In,
     Range,
+    Break,
+    Continue,
 }
 
 impl Display for TokenType {
@@ -100,6 +102,8 @@ impl Display for TokenType {
             TokenType::For => write!(f, "para"),
             TokenType::In => write!(f, "en"),
             TokenType::Range => write!(f, "rango"),
+            TokenType::Break => write!(f, "romper"),
+            TokenType::Continue => write!(f, "continuar"),
         }
     }
 }
@@ -118,12 +122,8 @@ pub fn keywords_to_tokens(v: &str) -> TokenType {
         "en" => TokenType::In,
         "rango" => TokenType::Range,
         "mientras" => TokenType::While,
-        "continuar" => TokenType::IllegalMsg(
-            "La palabra clave `continuar` no esta implementada aun".to_owned(),
-        ),
-        "romper" => {
-            TokenType::IllegalMsg("La palabra clave `romper` no esta implementada aun".to_owned())
-        }
+        "continuar" => TokenType::Continue,
+        "romper" => TokenType::Break,
         _ => TokenType::Ident(v.to_owned()),
     }
 }

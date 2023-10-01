@@ -153,7 +153,6 @@ impl Parser {
     }
 
     fn parse_statement(&mut self) -> Result<Statement, ParserError> {
-        // println!("{:?}, {:?}", self.current_token, self.peek_token);
         if self.current_token_is(TokenType::CommentLine) {
             self.next_token();
             return self.parse_statement();
@@ -162,6 +161,18 @@ impl Parser {
             TokenType::Var => self.parse_var_statement(),
             TokenType::Return => self.parse_return_statement(),
             TokenType::Func => self.parse_fn_statement(),
+            TokenType::Break => {
+                if !self.expected_peek(TokenType::SemiColon) {
+                    return Err(ParserError::MissingSemiColon(self.current_token.line, self.current_token.col));
+                }
+                Ok(Statement::Break(self.current_token.line, self.current_token.col))
+            },
+            TokenType::Continue => {
+                if !self.expected_peek(TokenType::SemiColon) {
+                    return Err(ParserError::MissingSemiColon(self.current_token.line, self.current_token.col));
+                }
+                Ok(Statement::Continue(self.current_token.line, self.current_token.col))
+            },
             _ => self.parse_expression_statement(),
         }
     }
@@ -233,6 +244,8 @@ impl Parser {
     }
 
     fn parse_return_statement(&mut self) -> Result<Statement, ParserError> {
+        let line = self.current_token.line;
+        let col = self.current_token.col;
         self.next_token();
 
         let expr = self.parse_expression(Precedence::Lowest)?;
@@ -246,7 +259,7 @@ impl Parser {
             }
         }
 
-        Ok(Statement::Return(expr))
+        Ok(Statement::Return(expr, line, col))
     }
 
     fn parse_fn_statement(&mut self) -> Result<Statement, ParserError> {

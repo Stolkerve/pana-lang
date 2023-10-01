@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::{HashMap, VecDeque}, rc::Rc};
 
 use crate::parser::expression::{ExprType, Expression, FnParams};
 use crate::parser::statement::{BlockStatement, Statement};
@@ -11,9 +11,19 @@ use super::builtins::{
 use super::environment::{Environment, RcEnvironment};
 use super::objects::{new_rc_object, Object, ResultObj};
 
+#[allow(dead_code)]
+#[derive(PartialEq, Clone, Debug)]
+pub enum Context {
+    Global,
+    If,
+    Fn,
+    Loop
+}
+
 pub struct Evaluator {
     environment: RcEnvironment,
     buildins_fn: HashMap<String, Box<dyn BuildinFnPointer>>,
+    stack_ctx: VecDeque<Context>
 }
 
 impl Default for Evaluator {
@@ -48,6 +58,7 @@ impl Evaluator {
                     Box::new(buildin_cadena_fn) as Box<dyn BuildinFnPointer>,
                 ),
             ]),
+            stack_ctx: VecDeque::new()
         }
     }
 
@@ -62,6 +73,7 @@ impl Evaluator {
     }
 
     pub fn eval_program(&mut self, statements: BlockStatement) -> ResultObj {
+        self.stack_ctx.push_back(Context::Global);
         self.eval_block_statement(statements, &self.environment.clone())
     }
 
@@ -78,12 +90,18 @@ impl Evaluator {
             1 => {
                 let stmt = program.remove(0);
                 // let ref_stmt = Rc::new(RefCell::new(stmt));
-                self.eval_statement(stmt, env)
+                let stmt = self.eval_statement(stmt, env);
+                if let ResultObj::Copy(Object::Break) = stmt {
+                    return ResultObj::Copy(Object::Void);
+                }
+                stmt
             }
             _ => {
                 let stmt = program.remove(0);
-                match self.eval_statement(stmt, env) {
-                    ResultObj::Copy(Object::Return(obj)) => *obj,
+                let obj = self.eval_statement(stmt, env);
+                match obj {
+                    ResultObj::Copy(Object::Return(obj)) => ResultObj::Copy(Object::Return(obj)),
+                    ResultObj::Copy(Object::Break) => ResultObj::Copy(Object::Void),
                     ResultObj::Copy(Object::Error(msg)) => ResultObj::Copy(Object::Error(msg)),
                     _ => self.eval_block_statement(program.clone(), env),
                 }
@@ -94,8 +112,13 @@ impl Evaluator {
     fn eval_statement(&mut self, stmt: Statement, env: &RcEnvironment) -> ResultObj {
         match stmt {
             Statement::Var { name, value } => self.eval_var(&name, value, env),
-            Statement::Return(expr) => {
-                ResultObj::Copy(Object::Return(Box::new(self.eval_expression(expr, env))))
+            Statement::Return(expr, line, col) => {
+                while let Some(ctx) = self.stack_ctx.pop_back() {
+                    if let Context::Fn = ctx {
+                        return ResultObj::Copy(Object::Return(Box::new(self.eval_expression(expr, env))));
+                    }
+                }
+                ResultObj::Copy(Object::Error(self.create_msg_err("Solo se puede retornar dentro de funciones".into(), line, col)))
             }
             Statement::Expression(expr) => self.eval_expression(expr, env),
             Statement::Fn {
@@ -116,6 +139,24 @@ impl Evaluator {
                     None => self.insert_obj(&name, obj, env),
                 }
             }
+            Statement::Break(line, col) => {
+                while let Some(ctx) = self.stack_ctx.pop_back() {
+                    match ctx {
+                        Context::If | Context::Loop => return ResultObj::Copy(Object::Break),
+                        _ => continue
+                    }
+                }
+                ResultObj::Copy(Object::Error(self.create_msg_err("Solo se puede romper condicionales y bucles".into(), line, col)))
+            },
+            Statement::Continue(line, col) => { 
+                while let Some(ctx) = self.stack_ctx.pop_back() {
+                    match ctx {
+                        Context::Loop => todo!(),
+                        _ => continue
+                    }
+                }
+                ResultObj::Copy(Object::Error(self.create_msg_err("Solo se puede romper bucles".into(), line, col)))
+            },
         }
     }
 
@@ -168,6 +209,7 @@ impl Evaluator {
         alternative: BlockStatement,
         env: &RcEnvironment,
     ) -> ResultObj {
+        self.stack_ctx.push_back(Context::If);
         let condition = self.eval_expression(condition, env);
         let condition_res = {
             match condition {
@@ -183,7 +225,9 @@ impl Evaluator {
         if condition_res {
             return self.eval_block_statement(consequence, &scope_env);
         }
-        self.eval_block_statement(alternative, &scope_env)
+        let obj = self.eval_block_statement(alternative, &scope_env);
+        self.stack_ctx.pop_back();
+        obj
     }
 
     fn eval_prefix(
@@ -573,14 +617,23 @@ impl Evaluator {
         let line = function.line;
         let col = function.col;
         let obj = self.eval_expression(function, env);
-        match obj {
+        let obj = match obj {
             ResultObj::Copy(Object::FnExpr { params, body, env }) => {
-                self.eval_fn_expr(arguments, params, body, &env, line, col)
+                self.stack_ctx.push_back(Context::Fn);
+                let obj = self.eval_fn_expr(arguments, params, body, &env, line, col);
+                self.stack_ctx.pop_back();
+                obj
             }
             ResultObj::Copy(Object::Fn {
                 params, body, env, ..
-            }) => self.eval_fn_expr(arguments, params, body, &env, line, col),
+            }) => {
+                self.stack_ctx.push_back(Context::Fn);
+                let obj = self.eval_fn_expr(arguments, params, body, &env, line, col);
+                self.stack_ctx.pop_back();
+                obj
+            },
             ResultObj::Copy(Object::BuildinFn { func, .. }) => func(self, arguments, env),
+            // TODO(Retornar errores previo)
             _ => ResultObj::Copy(Object::Error(
                 self.create_msg_err(
                     "La operacion de llamada solo puede ser aplicada a objetos que sean funciones"
@@ -589,7 +642,8 @@ impl Evaluator {
                     col,
                 ),
             )),
-        }
+        };
+        obj
     }
 
     fn eval_fn_expr(
@@ -787,6 +841,7 @@ impl Evaluator {
                 col,
             )));
         }
+        self.stack_ctx.push_back(Context::Loop);
 
         let iter_obj: ResultObj;
         let mut end: i64 = 0;
@@ -993,6 +1048,7 @@ impl Evaluator {
             },
         }
 
+        self.stack_ctx.pop_back();
         ResultObj::Copy(Object::Void)
     }
 }

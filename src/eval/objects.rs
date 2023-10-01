@@ -40,6 +40,7 @@ pub enum Object {
         func: Box<dyn BuildinFnPointer>,
     },
     Void,
+    Break,
     Null,
 }
 
@@ -94,6 +95,7 @@ impl Object {
             Object::Void => "vacio".to_owned(),
             Object::List(_) => "lista".to_owned(),
             Object::Dictionary { .. } => "diccionario".to_owned(),
+            Object::Break => unreachable!(),
         }
     }
 }
@@ -130,6 +132,7 @@ impl Display for Object {
                     .collect::<Vec<String>>()
                     .join(", ")
             ),
+            Object::Break => unreachable!(),
         }
     }
 }
