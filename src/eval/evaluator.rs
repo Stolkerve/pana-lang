@@ -89,7 +89,6 @@ impl Evaluator {
             0 => ResultObj::Copy(Object::Void),
             1 => {
                 let stmt = program.remove(0);
-                // let ref_stmt = Rc::new(RefCell::new(stmt));
                 let stmt = self.eval_statement(stmt, env);
                 if let ResultObj::Copy(Object::Break) = stmt {
                     return ResultObj::Copy(Object::Void);
@@ -103,7 +102,7 @@ impl Evaluator {
                     ResultObj::Copy(Object::Return(obj)) => ResultObj::Copy(Object::Return(obj)),
                     ResultObj::Copy(Object::Break) => ResultObj::Copy(Object::Void),
                     ResultObj::Copy(Object::Error(msg)) => ResultObj::Copy(Object::Error(msg)),
-                    _ => self.eval_block_statement(program.clone(), env),
+                    _ => self.eval_block_statement(program, env),
                 }
             }
         }
@@ -803,10 +802,10 @@ impl Evaluator {
                 }
             }
         };
-        let body = Rc::new(RefCell::new(body));
+        let body = Box::new(body);
         while condition_res {
             let scope_env = Rc::new(RefCell::new(Environment::new(Some(env.clone()))));
-            let obj = self.eval_block_statement(body.borrow().clone(), &scope_env);
+            let obj = self.eval_block_statement(*body.clone(), &scope_env);
             if self.is_error(&obj) {
                 return obj;
             }
@@ -999,7 +998,8 @@ impl Evaluator {
             )))
         }
 
-        let body = Rc::new(RefCell::new(body));
+        // let body = Rc::new(RefCell::new(body));
+        let body = Box::new(body);
         match iter_obj {
             ResultObj::Copy(obj) => match obj {
                 Object::Numeric(Numeric::Int(begin)) => {
@@ -1017,7 +1017,7 @@ impl Evaluator {
                         if self.is_error(&elem_obj) {
                             return elem_obj;
                         }
-                        let obj = self.eval_block_statement(body.borrow().clone(), &scope_env);
+                        let obj = self.eval_block_statement(*body.clone(), &scope_env);
                         if self.is_error(&obj) {
                             return obj;
                         }
