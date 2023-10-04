@@ -19,7 +19,7 @@ Este lenguaje de programacion esta inspirado en el libro *Writing a interpreter 
 ```cargo build --release```
 
 # Comandos
-### Ejecutar un archivo .pana o cualquier archivo, no descriminamos la extension.
+### Ejecutar un archivo .pana.
 ```pana archivo.pana```
 
 ### Arte
@@ -185,8 +185,8 @@ cadena(10) # -> "10"
 - ✅️ Cambiar el tipo de dato entero a numerico
 - ✅ bucle for range: para i en rango(10).
 - ✅ bucle while: mientras i < 10.
-- ⬜ Keyword break: romper.
-- ⬜ Keyword continue: continuar.
+- ✅ Keyword break: romper.
+- ✅ Keyword continue: continuar.
 - ⬜ Extencion de vscode de syntax hightlighting.
 
 ### Version 0.2
