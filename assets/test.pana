@@ -4,9 +4,13 @@ fn fibonaci(límite) {
     var a = 0;
     var b = 1;
     para i en rango(límite) {
+        si i == 5 {
+            continuar;
+        }
         var c = a + b;
         a = b;
         b = c;
+        imprimir(b);
     }
     si b == 89 {
         si verdad {

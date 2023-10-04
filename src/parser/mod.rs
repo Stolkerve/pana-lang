@@ -123,10 +123,10 @@ impl Parser {
         if let TokenType::Ident(ident) = self.peek_token.r#type.clone() {
             Ok(ident.to_string())
         } else {
-            return Err(ParserError::MissingIdentifier(
+            Err(ParserError::MissingIdentifier(
                 self.current_token.line,
                 self.current_token.col,
-            ));
+            ))
         }
     }
 
@@ -163,16 +163,28 @@ impl Parser {
             TokenType::Func => self.parse_fn_statement(),
             TokenType::Break => {
                 if !self.expected_peek(TokenType::SemiColon) {
-                    return Err(ParserError::MissingSemiColon(self.current_token.line, self.current_token.col));
+                    return Err(ParserError::MissingSemiColon(
+                        self.current_token.line,
+                        self.current_token.col,
+                    ));
                 }
-                Ok(Statement::Break(self.current_token.line, self.current_token.col))
-            },
+                Ok(Statement::Break(
+                    self.current_token.line,
+                    self.current_token.col,
+                ))
+            }
             TokenType::Continue => {
                 if !self.expected_peek(TokenType::SemiColon) {
-                    return Err(ParserError::MissingSemiColon(self.current_token.line, self.current_token.col));
+                    return Err(ParserError::MissingSemiColon(
+                        self.current_token.line,
+                        self.current_token.col,
+                    ));
                 }
-                Ok(Statement::Continue(self.current_token.line, self.current_token.col))
-            },
+                Ok(Statement::Continue(
+                    self.current_token.line,
+                    self.current_token.col,
+                ))
+            }
             _ => self.parse_expression_statement(),
         }
     }

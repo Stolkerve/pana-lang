@@ -41,6 +41,7 @@ pub enum Object {
     },
     Void,
     Break,
+    Continue,
     Null,
 }
 
@@ -96,6 +97,7 @@ impl Object {
             Object::List(_) => "lista".to_owned(),
             Object::Dictionary { .. } => "diccionario".to_owned(),
             Object::Break => unreachable!(),
+            Object::Continue => unreachable!(),
         }
     }
 }
@@ -133,6 +135,7 @@ impl Display for Object {
                     .join(", ")
             ),
             Object::Break => unreachable!(),
+            Object::Continue => unreachable!(),
         }
     }
 }
@@ -160,7 +163,7 @@ impl ResultObj {
     pub fn get_type(&self) -> String {
         match self {
             ResultObj::Copy(obj) => obj.get_type(),
-            ResultObj::Ref(obj) => obj.borrow().get_type()
+            ResultObj::Ref(obj) => obj.borrow().get_type(),
         }
     }
 }
