@@ -447,6 +447,10 @@ impl Parser {
                         self.next_token();
                         left_expr = self.parse_infix_expression(left_expr.unwrap());
                     }
+                    TokenType::Percnt => {
+                        self.next_token();
+                        left_expr = self.parse_infix_expression(left_expr.unwrap());
+                    }
                     TokenType::Eq => {
                         self.next_token();
                         left_expr = self.parse_infix_expression(left_expr.unwrap());

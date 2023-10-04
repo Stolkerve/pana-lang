@@ -19,6 +19,7 @@ pub enum TokenType {
     Minus,
     Asterisk,
     Slash,
+    Percnt,
     Bang,
     Eq,
     NotEq,
@@ -104,6 +105,7 @@ impl Display for TokenType {
             TokenType::Range => write!(f, "rango"),
             TokenType::Break => write!(f, "romper"),
             TokenType::Continue => write!(f, "continuar"),
+            TokenType::Percnt => write!(f, "%"),
         }
     }
 }

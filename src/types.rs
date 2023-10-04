@@ -1,6 +1,6 @@
 use std::{
     fmt::Display,
-    ops::{Add, Div, Mul, Neg, Sub},
+    ops::{Add, Div, Mul, Neg, Sub, Rem},
 };
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
@@ -68,6 +68,19 @@ impl Div for Numeric {
             (Numeric::Int(a), Numeric::Float(b)) => Numeric::Float(a as f64 / b),
             (Numeric::Float(a), Numeric::Int(b)) => Numeric::Float(a / b as f64),
             (Numeric::Float(a), Numeric::Float(b)) => Numeric::Float(a / b),
+        }
+    }
+}
+
+impl Rem for Numeric {
+    type Output = Self;
+
+    fn rem(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Numeric::Int(a), Numeric::Int(b)) => Numeric::Int(a % b),
+            (Numeric::Int(a), Numeric::Float(b)) => Numeric::Float(a as f64 % b),
+            (Numeric::Float(a), Numeric::Int(b)) => Numeric::Float(a % b as f64),
+            (Numeric::Float(a), Numeric::Float(b)) => Numeric::Float(a % b),
         }
     }
 }
