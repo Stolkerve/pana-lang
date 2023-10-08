@@ -1,23 +1,23 @@
 use std::io::Write;
 
-use super::{
+use crate::eval::{
     environment::RcEnvironment,
+    evaluator::Evaluator,
     objects::{Object, ResultObj},
 };
-use crate::eval::evaluator::Evaluator;
 use crate::{parser::expression::FnParams, types::Numeric};
 
-pub trait BuildinFnPointer: Fn(&mut Evaluator, FnParams, &RcEnvironment) -> ResultObj {
-    fn clone_box<'a>(&self) -> Box<dyn 'a + BuildinFnPointer>
+pub trait InternalFnPointer: Fn(&mut Evaluator, FnParams, &RcEnvironment) -> ResultObj {
+    fn clone_box<'a>(&self) -> Box<dyn 'a + InternalFnPointer>
     where
         Self: 'a;
 }
 
-impl<F> BuildinFnPointer for F
+impl<F> InternalFnPointer for F
 where
     F: Fn(&mut Evaluator, FnParams, &RcEnvironment) -> ResultObj + Clone,
 {
-    fn clone_box<'a>(&self) -> Box<dyn 'a + BuildinFnPointer>
+    fn clone_box<'a>(&self) -> Box<dyn 'a + InternalFnPointer>
     where
         Self: 'a,
     {
@@ -25,14 +25,14 @@ where
     }
 }
 
-impl<'a> Clone for Box<dyn 'a + BuildinFnPointer> {
+impl<'a> Clone for Box<dyn 'a + InternalFnPointer> {
     fn clone(&self) -> Self {
         (**self).clone_box()
     }
 }
 
 // Funcion que retorna la longitud de un string o array
-pub fn buildin_longitud_fn(eval: &mut Evaluator, args: FnParams, env: &RcEnvironment) -> ResultObj {
+pub fn longitud(eval: &mut Evaluator, args: FnParams, env: &RcEnvironment) -> ResultObj {
     if args.len() != 1 {
         return ResultObj::Copy(Object::Error(format!(
             "Se encontro {} argumentos de 1",
@@ -68,7 +68,7 @@ pub fn buildin_longitud_fn(eval: &mut Evaluator, args: FnParams, env: &RcEnviron
 }
 
 // Funcion que imprime en una linea objetos en pantalla
-pub fn buildin_imprimir_fn(eval: &mut Evaluator, args: FnParams, env: &RcEnvironment) -> ResultObj {
+pub fn imprimir(eval: &mut Evaluator, args: FnParams, env: &RcEnvironment) -> ResultObj {
     if !args.is_empty() {
         let objs = args
             .iter()
@@ -87,7 +87,7 @@ pub fn buildin_imprimir_fn(eval: &mut Evaluator, args: FnParams, env: &RcEnviron
 }
 
 // Funcion que retorna el tipo de dato del objeto
-pub fn buildin_tipo_fn(eval: &mut Evaluator, args: FnParams, env: &RcEnvironment) -> ResultObj {
+pub fn tipo(eval: &mut Evaluator, args: FnParams, env: &RcEnvironment) -> ResultObj {
     if args.len() != 1 {
         return ResultObj::Copy(Object::Error(format!(
             "Se encontro {} argumentos de 1",
@@ -102,7 +102,7 @@ pub fn buildin_tipo_fn(eval: &mut Evaluator, args: FnParams, env: &RcEnvironment
 }
 
 // Funcion que permite un input desde el terminal
-pub fn buildin_leer_fn(eval: &mut Evaluator, args: FnParams, env: &RcEnvironment) -> ResultObj {
+pub fn leer(eval: &mut Evaluator, args: FnParams, env: &RcEnvironment) -> ResultObj {
     match args.len() {
         0 => {
             let mut output = String::new();
@@ -138,7 +138,7 @@ pub fn buildin_leer_fn(eval: &mut Evaluator, args: FnParams, env: &RcEnvironment
     }
 }
 
-pub fn buildin_cadena_fn(eval: &mut Evaluator, args: FnParams, env: &RcEnvironment) -> ResultObj {
+pub fn cadena(eval: &mut Evaluator, args: FnParams, env: &RcEnvironment) -> ResultObj {
     if args.len() != 1 {
         return ResultObj::Copy(Object::Error(format!(
             "Se encontro {} argumentos de 1",

@@ -23,9 +23,9 @@ enum Precedence {
     SumSub = 3,      // + y -
     ProductDiv = 4,  // * y /
     Prefix = 5,      //-1
-    Call = 6,        // foo()
-    Index = 7,       // foo()
-    Member = 8,      // foo()
+    Member = 6,      // foo()
+    Call = 7,        // foo()
+    Index = 8,       // foo()
 }
 
 fn to_tokens_precedence(token: &TokenType) -> Precedence {
@@ -40,9 +40,9 @@ fn to_tokens_precedence(token: &TokenType) -> Precedence {
         TokenType::Gt => Precedence::LessGreater,
         TokenType::LtEq => Precedence::LessGreater,
         TokenType::GtEq => Precedence::LessGreater,
+        TokenType::Dot => Precedence::Member,
         TokenType::LParen => Precedence::Call,
         TokenType::LBracket => Precedence::Index,
-        TokenType::Dot => Precedence::Member,
         _ => Precedence::Lowest,
     }
 }
@@ -425,6 +425,7 @@ impl Parser {
         };
 
         // Operaciones infix
+        // println!("{} < {}: {}", precedence as u32, self.peek_precedence() as u32, (precedence as u32) < (self.peek_precedence() as u32));
         if left_expr.is_ok() {
             while !self.peek_token_is(TokenType::SemiColon)
                 && (precedence as u32) < (self.peek_precedence() as u32)
@@ -472,6 +473,10 @@ impl Parser {
                         left_expr = self.parse_infix_expression(left_expr.unwrap());
                     }
                     TokenType::GtEq => {
+                        self.next_token();
+                        left_expr = self.parse_infix_expression(left_expr.unwrap());
+                    }
+                    TokenType::Dot => {
                         self.next_token();
                         left_expr = self.parse_infix_expression(left_expr.unwrap());
                     }

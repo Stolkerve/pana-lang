@@ -215,3 +215,26 @@ impl Display for ExprType {
         }
     }
 }
+
+impl ExprType {
+    pub fn get_type(&self) -> &str {
+        match self {
+            ExprType::Identifier(_) => "identificador",
+            ExprType::NumericLiteral(_) => "numerico",
+            ExprType::BooleanLiteral(_) => "logico",
+            ExprType::StringLiteral(_) => "cadena",
+            ExprType::NullLiteral => "nulo",
+            ExprType::FnLiteral { .. } => "funcion",
+            ExprType::ListLiteral { .. } => "funcion",
+            ExprType::DictionaryLiteral { .. } => "lista",
+            ExprType::Index { .. } => "diccionario",
+            ExprType::Prefix { .. } => "infija",
+            ExprType::Infix { .. } => "prefija",
+            ExprType::If { .. } => "condicion",
+            ExprType::While { .. } => "bucle",
+            ExprType::Call { .. } => "llamada",
+            ExprType::Assignment { .. } => "asignacion",
+            ExprType::ForRange { .. } => "bucle",
+        }
+    }
+}

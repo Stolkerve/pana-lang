@@ -4,16 +4,18 @@ use std::{
     rc::Rc,
 };
 
+use crate::buildins::{
+    internal::{cadena, imprimir, leer, longitud, tipo, InternalFnPointer},
+    member::match_member_fn,
+};
 use crate::parser::expression::{ExprType, Expression, FnParams};
 use crate::parser::statement::{BlockStatement, Statement};
 use crate::{token::TokenType, types::Numeric};
 
-use super::builtins::{
-    buildin_cadena_fn, buildin_imprimir_fn, buildin_leer_fn, buildin_longitud_fn, buildin_tipo_fn,
-    BuildinFnPointer,
+use super::{
+    environment::{Environment, RcEnvironment},
+    objects::{new_rc_object, Object, ResultObj},
 };
-use super::environment::{Environment, RcEnvironment};
-use super::objects::{new_rc_object, Object, ResultObj};
 
 #[allow(dead_code)]
 #[derive(PartialEq, Clone, Debug)]
@@ -26,7 +28,7 @@ pub enum Context {
 
 pub struct Evaluator {
     environment: RcEnvironment,
-    buildins_fn: HashMap<String, Box<dyn BuildinFnPointer>>,
+    buildins_internal_fn: HashMap<String, Box<dyn InternalFnPointer>>,
     stack_ctx: VecDeque<Context>,
 }
 
@@ -40,26 +42,26 @@ impl Evaluator {
     pub fn new() -> Self {
         Self {
             environment: Rc::new(RefCell::new(Environment::new(None))),
-            buildins_fn: HashMap::from([
+            buildins_internal_fn: HashMap::from([
                 (
                     "longitud".to_owned(),
-                    Box::new(buildin_longitud_fn) as Box<dyn BuildinFnPointer>,
+                    Box::new(longitud) as Box<dyn InternalFnPointer>,
                 ),
                 (
                     "tipo".to_owned(),
-                    Box::new(buildin_tipo_fn) as Box<dyn BuildinFnPointer>,
+                    Box::new(tipo) as Box<dyn InternalFnPointer>,
                 ),
                 (
                     "imprimir".to_owned(),
-                    Box::new(buildin_imprimir_fn) as Box<dyn BuildinFnPointer>,
+                    Box::new(imprimir) as Box<dyn InternalFnPointer>,
                 ),
                 (
                     "leer".to_owned(),
-                    Box::new(buildin_leer_fn) as Box<dyn BuildinFnPointer>,
+                    Box::new(leer) as Box<dyn InternalFnPointer>,
                 ),
                 (
                     "cadena".to_owned(),
-                    Box::new(buildin_cadena_fn) as Box<dyn BuildinFnPointer>,
+                    Box::new(cadena) as Box<dyn InternalFnPointer>,
                 ),
             ]),
             stack_ctx: VecDeque::new(),
@@ -93,10 +95,9 @@ impl Evaluator {
             0 => ResultObj::Copy(Object::Void),
             1 => self.eval_statement(program.remove(0), env),
             _ => {
-                let stmt = program.remove(0);
-                let res_obj = self.eval_statement(stmt, env);
+                let res_obj = self.eval_statement(program.remove(0), env);
                 match res_obj {
-                    ResultObj::Copy(Object::Return(_)) => res_obj,
+                    ResultObj::Copy(Object::Return(returned_obj)) => *returned_obj,
                     ResultObj::Copy(Object::Error(msg)) => ResultObj::Copy(Object::Error(msg)),
                     ResultObj::Copy(Object::Break) => res_obj,
                     ResultObj::Copy(Object::Continue) => ResultObj::Copy(Object::Void),
@@ -110,9 +111,6 @@ impl Evaluator {
         match stmt {
             Statement::Var { name, value } => self.eval_var(&name, value, env),
             Statement::Return(expr, line, col) => {
-                // return ResultObj::Copy(Object::Return(Box::new(
-                //     self.eval_expression(expr, env),
-                // )));
                 while let Some(ctx) = self.stack_ctx.pop_back() {
                     if let Context::Fn = ctx {
                         return ResultObj::Copy(Object::Return(Box::new(
@@ -361,8 +359,6 @@ impl Evaluator {
             (_, ResultObj::Copy(Object::Null)) => self.eval_infix_null_object_operation(operator),
             (ResultObj::Copy(Object::Return(a)), b) => self.match_infix_ops(*a, b, operator),
             (a, ResultObj::Copy(Object::Return(b))) => self.match_infix_ops(a, *b, operator),
-            // (ResultObj::Ref(a), b) => match &*a.borrow() {
-            // }
             (a, b) => ResultObj::Copy(Object::Error(format!(
                 "No se soporta operaciones {} {} {}",
                 self.get_type(&a),
@@ -370,6 +366,42 @@ impl Evaluator {
                 self.get_type(&b)
             ))),
         }
+    }
+
+    fn eval_member_ops(
+        &mut self,
+        right: Expression,
+        left: ResultObj,
+        left_line: usize,
+        left_col: usize,
+        env: &RcEnvironment,
+    ) -> ResultObj {
+        return match right.r#type {
+            ExprType::Call {
+                function,
+                arguments,
+            } => match function.r#type {
+                ExprType::Identifier(identifier) => {
+                    if self.is_error(&left) {
+                        return left;
+                    }
+                    match_member_fn(self, identifier, arguments, left, left_line, left_col, env)
+                }
+                _ => ResultObj::Copy(Object::Error(self.create_msg_err(
+                    "El operador de acceso de miembro espera un identicador o llamada".into(),
+                    left_line,
+                    left_col,
+                ))),
+            },
+            _ => ResultObj::Copy(Object::Error(self.create_msg_err(
+                format!(
+                    "El operador de acceso de miembro no puede operar con una expresion {}",
+                    right.r#type.get_type()
+                ),
+                right.line,
+                right.col,
+            ))),
+        };
     }
 
     fn eval_infix(
@@ -382,6 +414,11 @@ impl Evaluator {
         let line = left.line;
         let col = left.col;
         let left = self.eval_expression(left, env);
+
+        if operator == TokenType::Dot {
+            return self.eval_member_ops(right, left, line, col, env);
+        }
+
         let right = self.eval_expression(right, env);
 
         // match err
@@ -577,21 +614,23 @@ impl Evaluator {
     fn insert_var(&mut self, name: &str, value: Expression, env: &RcEnvironment) -> ResultObj {
         let line = value.line;
         let col = value.col;
-        let obj = self.eval_expression(value, env);
-        match obj {
-            ResultObj::Copy(Object::Error(msg)) => {
-                return ResultObj::Copy(Object::Error(msg)); // Cosas de borrow...
-            }
-            ResultObj::Copy(Object::Void) => {
-                return ResultObj::Copy(Object::Error(self.create_msg_err(
-                    "No se puede asignar el tipo de dato vacio a una variable".to_owned(),
-                    line,
-                    col,
-                )));
-            }
+        let mut value_obj = self.eval_expression(value, env);
+        match value_obj {
+            ResultObj::Copy(ref obj) => match obj {
+                Object::Error(_) => return value_obj,
+                Object::Return(ref returned_obj) => value_obj = *returned_obj.clone(),
+                Object::Void => {
+                    return ResultObj::Copy(Object::Error(self.create_msg_err(
+                        "No se puede asignar el tipo de dato vacio a una variable".to_owned(),
+                        line,
+                        col,
+                    )));
+                }
+                _ => {}
+            },
             _ => {}
         }
-        self.insert_obj(name, obj, env)
+        self.insert_obj(name, value_obj, env)
     }
 
     fn insert_obj(&mut self, name: &str, obj: ResultObj, env: &RcEnvironment) -> ResultObj {
@@ -610,7 +649,7 @@ impl Evaluator {
         match env.borrow().get(&ident) {
             Some(obj) => obj,
             None => {
-                if let Some(func) = self.buildins_fn.get(&ident) {
+                if let Some(func) = self.buildins_internal_fn.get(&ident) {
                     return ResultObj::Copy(Object::BuildinFn {
                         name: ident,
                         func: func.clone_box(),
@@ -682,7 +721,9 @@ impl Evaluator {
             }
         }
         let res_obj = self.eval_block_statement(body, &scope_env);
-        self.stack_ctx.pop_back();
+        if let Some(Context::Fn) = self.stack_ctx.back() {
+            self.stack_ctx.pop_back();
+        }
         res_obj
     }
 
@@ -787,7 +828,7 @@ impl Evaluator {
         ResultObj::Ref(new_rc_object(Object::Dictionary(pairs)))
     }
 
-    fn is_error(&mut self, obj: &ResultObj) -> bool {
+    pub fn is_error(&mut self, obj: &ResultObj) -> bool {
         if let ResultObj::Copy(Object::Error(_)) = obj {
             return true;
         }

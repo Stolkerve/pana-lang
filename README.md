@@ -187,7 +187,7 @@ cadena(10) # -> "10"
 - ✅ bucle while: mientras i < 10.
 - ✅ Keyword break: romper.
 - ✅ Keyword continue: continuar.
-- ⬜ Extencion de vscode de syntax hightlighting.
+- ✅ Extencion de vscode de syntax hightlighting.
 
 ### Version 0.2
 - ⬜ Operador de acceso de miembros: **.**

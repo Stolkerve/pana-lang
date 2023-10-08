@@ -1,12 +1,21 @@
 use std::{
     fmt::Display,
-    ops::{Add, Div, Mul, Neg, Sub, Rem},
+    ops::{Add, Div, Mul, Neg, Rem, Sub},
 };
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum Numeric {
     Int(i64), // dependiendo del build, tendras: 32 o 64 bits de numero entero
     Float(f64),
+}
+
+impl Numeric {
+    pub fn get_type(&self) -> &str {
+        match self {
+            Numeric::Int(_) => "entero",
+            Numeric::Float(_) => "flotante",
+        }
+    }
 }
 
 impl Neg for Numeric {

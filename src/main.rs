@@ -1,3 +1,4 @@
+pub mod buildins;
 mod eval;
 mod lexer;
 mod parser;
@@ -40,7 +41,7 @@ fn main() {
             None => {
                 eprintln!("Solo se puede ejecutar archivos .pana");
                 exit(1);
-            },
+            }
         }
 
         let mut evaluator = Evaluator::new();

@@ -1,6 +1,7 @@
 use std::{cell::RefCell, collections::HashMap, fmt::Display, hash::Hash, rc::Rc};
 
 use crate::{
+    buildins::internal::InternalFnPointer,
     parser::{
         expression::{format_arguments, FnParams},
         statement::BlockStatement,
@@ -8,7 +9,7 @@ use crate::{
     types::Numeric,
 };
 
-use super::{builtins::BuildinFnPointer, environment::Environment};
+use super::environment::Environment;
 
 pub type RcObject = Rc<RefCell<Object>>;
 pub fn new_rc_object(obj: Object) -> RcObject {
@@ -37,7 +38,7 @@ pub enum Object {
     },
     BuildinFn {
         name: String,
-        func: Box<dyn BuildinFnPointer>,
+        func: Box<dyn InternalFnPointer>,
     },
     Void,
     Break,
@@ -70,13 +71,7 @@ impl Object {
     pub fn get_type(&self) -> String {
         match self {
             Object::Numeric(n) => {
-                format!(
-                    "numerico {}",
-                    match n {
-                        Numeric::Int(_) => String::from("entero"),
-                        Numeric::Float(_) => String::from("flotante"),
-                    }
-                )
+                format!("numerico {}", n.get_type())
             }
             Object::Boolean(_) => "logico".to_owned(),
             Object::Error(_) => "error".to_owned(),
