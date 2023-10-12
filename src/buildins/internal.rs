@@ -3,7 +3,7 @@ use std::io::Write;
 use crate::eval::{
     environment::RcEnvironment,
     evaluator::Evaluator,
-    objects::{Object, ResultObj},
+    objects::{new_rc_object, Object, ResultObj},
 };
 use crate::{parser::expression::FnParams, types::Numeric};
 
@@ -41,23 +41,17 @@ pub fn longitud(eval: &mut Evaluator, args: FnParams, env: &RcEnvironment) -> Re
     }
     let arg_obj = eval.eval_expression(args.get(0).unwrap().clone(), env);
     match arg_obj {
-        // obj => Object::Error(format!(
-        //     "Se espera un tipo de dato cadena, no {}",
-        //     obj.get_type()
-        // )),
-        ResultObj::Copy(obj) => match obj {
-            Object::String(string) => {
-                ResultObj::Copy(Object::Numeric(Numeric::Int(string.len() as i64)))
-            }
-            obj => ResultObj::Copy(Object::Error(format!(
-                "Se espera un tipo de dato cadena, no {}",
-                obj.get_type()
-            ))),
-        },
+        ResultObj::Copy(obj) => ResultObj::Copy(Object::Error(format!(
+            "Se espera un tipo de dato cadena, no {}",
+            obj.get_type()
+        ))),
         ResultObj::Ref(obj) => match &*obj.borrow() {
             Object::List(objs) => ResultObj::Copy(Object::Numeric(Numeric::Int(objs.len() as i64))),
             Object::Dictionary(pairs) => {
                 ResultObj::Copy(Object::Numeric(Numeric::Int(pairs.len() as i64)))
+            }
+            Object::String(string) => {
+                ResultObj::Copy(Object::Numeric(Numeric::Int(string.len() as i64)))
             }
             obj => ResultObj::Copy(Object::Error(format!(
                 "Se espera un tipo de dato cadena, no {}",
@@ -96,8 +90,10 @@ pub fn tipo(eval: &mut Evaluator, args: FnParams, env: &RcEnvironment) -> Result
     }
     let arg_obj = eval.eval_expression(args.get(0).unwrap().clone(), env);
     match arg_obj {
-        ResultObj::Copy(obj) => ResultObj::Copy(Object::String(obj.get_type().to_owned())),
-        ResultObj::Ref(obj) => ResultObj::Copy(Object::String(obj.borrow().get_type().to_owned())),
+        ResultObj::Copy(obj) => ResultObj::Ref(new_rc_object(Object::String(obj.get_type()))),
+        ResultObj::Ref(obj) => {
+            ResultObj::Ref(new_rc_object(Object::String(obj.borrow().get_type())))
+        }
     }
 }
 
@@ -107,28 +103,30 @@ pub fn leer(eval: &mut Evaluator, args: FnParams, env: &RcEnvironment) -> Result
         0 => {
             let mut output = String::new();
             std::io::stdin().read_line(&mut output).unwrap();
-            ResultObj::Copy(Object::String(output))
+            ResultObj::Ref(new_rc_object(Object::String(output)))
         }
         1 => {
             let arg_obj = eval.eval_expression(args.get(0).unwrap().clone(), env);
             return match arg_obj {
-                ResultObj::Copy(obj) => match obj {
+                ResultObj::Copy(obj) => ResultObj::Copy(Object::Error(format!(
+                    "Se espera un tipo de dato cadena, no {}",
+                    obj.get_type()
+                ))),
+                ResultObj::Ref(obj) => match &*obj.borrow() {
                     Object::String(promp) => {
                         let mut output = String::new();
                         print!("{}", promp);
                         std::io::stdout().flush().unwrap();
                         std::io::stdin().read_line(&mut output).unwrap();
-                        return ResultObj::Copy(Object::String(output.trim_end().to_owned()));
+                        return ResultObj::Ref(new_rc_object(Object::String(
+                            output.trim_end().to_owned(),
+                        )));
                     }
                     _ => ResultObj::Copy(Object::Error(format!(
                         "Se espera un tipo de dato cadena, no {}",
-                        obj.get_type()
+                        obj.borrow().get_type()
                     ))),
                 },
-                ResultObj::Ref(obj) => ResultObj::Copy(Object::Error(format!(
-                    "Se espera un tipo de dato cadena, no {}",
-                    obj.borrow().get_type()
-                ))),
             };
         }
         _ => ResultObj::Copy(Object::Error(format!(
@@ -147,7 +145,9 @@ pub fn cadena(eval: &mut Evaluator, args: FnParams, env: &RcEnvironment) -> Resu
     }
     let arg_obj = eval.eval_expression(args.get(0).unwrap().clone(), env);
     match arg_obj {
-        ResultObj::Copy(obj) => ResultObj::Copy(Object::String(obj.to_string())),
-        ResultObj::Ref(obj) => ResultObj::Copy(Object::String(obj.borrow().to_string())),
+        ResultObj::Copy(obj) => ResultObj::Ref(new_rc_object(Object::String(obj.to_string()))),
+        ResultObj::Ref(obj) => {
+            ResultObj::Ref(new_rc_object(Object::String(obj.borrow().to_string())))
+        }
     }
 }

@@ -1,5 +1,4 @@
-# Ejemplo de fibonaci
-
+Ejemplo de fibonaci
 var lista = [];
 fn fibonaci(límite) {
     var a = 0;

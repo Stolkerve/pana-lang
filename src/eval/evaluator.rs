@@ -198,7 +198,9 @@ impl Evaluator {
                 arguments,
             } => self.eval_call(*function, arguments, env),
             ExprType::Assignment { left, right } => self.set_var(*left, *right, env),
-            ExprType::StringLiteral(string) => ResultObj::Copy(Object::String(string)),
+            ExprType::StringLiteral(string) => {
+                ResultObj::Ref(new_rc_object(Object::String(string)))
+            }
             ExprType::ListLiteral { elements } => self.eval_list_literal(elements, env),
             ExprType::Index { left, index } => {
                 self.eval_index_expression(*left, *index, None, env).clone()
@@ -296,16 +298,16 @@ impl Evaluator {
                     Numeric::Int(b as i64),
                     operator,
                 ),
-            (ResultObj::Copy(Object::String(a)), ResultObj::Copy(Object::String(b))) => {
-                self.eval_infix_string_operation(&a, &b, operator)
-            }
-            (ResultObj::Copy(Object::String(a)), ResultObj::Copy(Object::Numeric(b))) => {
-                self.eval_infix_string_int_operation(&a, b, operator)
-            }
-            (ResultObj::Copy(Object::Numeric(a)), ResultObj::Copy(Object::String(b))) => {
-                self.eval_infix_string_int_operation(&b, a, operator)
-            }
+            // (ResultObj::Copy(Object::String(a)), ResultObj::Copy(Object::Numeric(b))) => {
+            //     self.eval_infix_string_int_operation(&a, b, operator)
+            // }
+            // (ResultObj::Copy(Object::Numeric(a)), ResultObj::Copy(Object::String(b))) => {
+            //     self.eval_infix_string_int_operation(&b, a, operator)
+            // }
             (ResultObj::Ref(a), ResultObj::Ref(b)) => match (&*a.borrow(), &*b.borrow()) {
+                (Object::String(a), Object::String(b)) => {
+                    self.eval_infix_string_operation(a, b, operator)
+                }
                 (Object::List(ref a), Object::List(ref b)) => {
                     self.eval_infix_list_operation(a, b, operator)
                 }
@@ -313,10 +315,12 @@ impl Evaluator {
             },
             (ResultObj::Copy(Object::Numeric(a)), ResultObj::Ref(b)) => match &*b.borrow() {
                 Object::List(b) => self.eval_infix_list_int_operation(b, a, operator),
+                Object::String(b) => self.eval_infix_string_int_operation(b, a, operator),
                 _ => panic!("Ok, no se ocurre como llamar este error."),
             },
             (ResultObj::Ref(a), ResultObj::Copy(Object::Numeric(b))) => match &*a.borrow() {
                 Object::List(a) => self.eval_infix_list_int_operation(a, b, operator),
+                Object::String(a) => self.eval_infix_string_int_operation(a, b, operator),
                 _ => panic!("Ok, no se ocurre como llamar este error."),
             },
 
@@ -376,7 +380,7 @@ impl Evaluator {
         left_col: usize,
         env: &RcEnvironment,
     ) -> ResultObj {
-        return match right.r#type {
+        match right.r#type {
             ExprType::Call {
                 function,
                 arguments,
@@ -401,7 +405,7 @@ impl Evaluator {
                 right.line,
                 right.col,
             ))),
-        };
+        }
     }
 
     fn eval_infix(
@@ -457,7 +461,7 @@ impl Evaluator {
 
     fn eval_infix_string_operation(&self, a: &String, b: &String, op: TokenType) -> ResultObj {
         match op {
-            TokenType::Plus => ResultObj::Copy(Object::String(format!("{}{}", a, b))),
+            TokenType::Plus => ResultObj::Ref(new_rc_object(Object::String(format!("{}{}", a, b)))),
             TokenType::Eq => ResultObj::Copy(Object::Boolean(a == b)),
             TokenType::NotEq => ResultObj::Copy(Object::Boolean(a != b)),
             _ => ResultObj::Copy(Object::Null),
@@ -467,7 +471,9 @@ impl Evaluator {
     fn eval_infix_string_int_operation(&self, a: &str, b: Numeric, op: TokenType) -> ResultObj {
         if let Numeric::Int(int) = b {
             return match op {
-                TokenType::Asterisk => ResultObj::Copy(Object::String(a.repeat(int as usize))),
+                TokenType::Asterisk => {
+                    ResultObj::Ref(new_rc_object(Object::String(a.repeat(int as usize))))
+                }
                 _ => ResultObj::Copy(Object::Null),
             };
         }
@@ -615,8 +621,8 @@ impl Evaluator {
         let line = value.line;
         let col = value.col;
         let mut value_obj = self.eval_expression(value, env);
-        match value_obj {
-            ResultObj::Copy(ref obj) => match obj {
+        if let ResultObj::Copy(ref obj) = value_obj {
+            match obj {
                 Object::Error(_) => return value_obj,
                 Object::Return(ref returned_obj) => value_obj = *returned_obj.clone(),
                 Object::Void => {
@@ -627,8 +633,7 @@ impl Evaluator {
                     )));
                 }
                 _ => {}
-            },
-            _ => {}
+            }
         }
         self.insert_obj(name, value_obj, env)
     }
