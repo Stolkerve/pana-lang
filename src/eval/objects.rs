@@ -17,6 +17,27 @@ pub fn new_rc_object(obj: Object) -> RcObject {
 }
 
 #[derive(Clone)]
+pub struct FnExprObj {
+    pub params: FnParams,
+    pub body: BlockStatement,
+    pub env: Rc<RefCell<Environment>>,
+}
+
+#[derive(Clone)]
+pub struct FnObj {
+    pub name: String,
+    pub params: FnParams,
+    pub body: BlockStatement,
+    pub env: Rc<RefCell<Environment>>,
+}
+
+#[derive(Clone)]
+pub struct BuildinFnObj {
+    pub name: String,
+    pub func: Box<dyn InternalFnPointer>,
+}
+
+#[derive(Clone)]
 pub enum Object {
     Numeric(Numeric),
     Boolean(bool),
@@ -25,21 +46,9 @@ pub enum Object {
     Return(Box<ResultObj>),
     List(Vec<ResultObj>),
     Dictionary(HashMap<ResultObj, ResultObj>),
-    FnExpr {
-        params: FnParams,
-        body: BlockStatement,
-        env: Rc<RefCell<Environment>>,
-    },
-    Fn {
-        name: String,
-        params: FnParams,
-        body: BlockStatement,
-        env: Rc<RefCell<Environment>>,
-    },
-    BuildinFn {
-        name: String,
-        func: Box<dyn InternalFnPointer>,
-    },
+    FnExpr(Box<FnExprObj>),
+    Fn(Box<FnObj>),
+    BuildinFn(Box<BuildinFnObj>),
     Void,
     Break,
     Continue,
@@ -58,10 +67,8 @@ impl PartialEq for Object {
             (Self::Return(_), Self::Return(_)) => panic!("No se peude comparar un return"),
             (Self::List(l0), Self::List(r0)) => l0 == r0,
             (Self::FnExpr { .. }, Self::FnExpr { .. }) => panic!("No se puede comparar funciones"),
-            (Self::Fn { name: l_name, .. }, Self::Fn { name: r_name, .. }) => l_name == r_name,
-            (Self::BuildinFn { name: l_name, .. }, Self::BuildinFn { name: r_name, .. }) => {
-                l_name == r_name
-            }
+            (Self::Fn(l_obj), Self::Fn(r_obj)) => l_obj.name == r_obj.name,
+            (Self::BuildinFn(l_obj), Self::BuildinFn(r_obj)) => l_obj.name == r_obj.name,
             _ => core::mem::discriminant(self) == core::mem::discriminant(other),
         }
     }
@@ -105,11 +112,16 @@ impl Display for Object {
             Object::Null => write!(f, "nulo"),
             Object::Error(msg) => write!(f, "{}", msg),
             Object::Return(obj) => write!(f, "{}", obj),
-            Object::Fn { params, name, .. } => {
-                write!(f, "fn {}({}) {{...}}", name, format_arguments(params))
+            Object::Fn(obj) => {
+                write!(
+                    f,
+                    "fn {}({}) {{...}}",
+                    obj.name,
+                    format_arguments(&obj.params)
+                )
             }
-            Object::FnExpr { params, .. } => write!(f, "fn({}) {{...}}", format_arguments(params)),
-            Object::BuildinFn { name, .. } => write!(f, "fn {}(...) {{...}}", name),
+            Object::FnExpr(obj) => write!(f, "fn({}) {{...}}", format_arguments(&obj.params)),
+            Object::BuildinFn(obj) => write!(f, "fn {}(...) {{...}}", obj.name),
             Object::String(string) => write!(f, "{}", string),
             Object::Void => write!(f, ""),
             Object::List(objs) => write!(

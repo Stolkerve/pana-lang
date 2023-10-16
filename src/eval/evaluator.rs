@@ -14,7 +14,7 @@ use crate::{token::TokenType, types::Numeric};
 
 use super::{
     environment::{Environment, RcEnvironment},
-    objects::{new_rc_object, Object, ResultObj},
+    objects::{new_rc_object, BuildinFnObj, FnExprObj, FnObj, Object, ResultObj},
 };
 
 #[allow(dead_code)]
@@ -148,12 +148,12 @@ impl Evaluator {
                 line,
                 col,
             } => {
-                let obj = ResultObj::Copy(Object::Fn {
+                let obj = ResultObj::Copy(Object::Fn(Box::new(FnObj {
                     name: name.clone(),
                     params,
                     body,
                     env: env.clone(),
-                });
+                })));
                 match self.get_var_value(&name, env, line, col) {
                     Some(obj) => obj,
                     None => self.insert_obj(&name, obj, env),
@@ -178,11 +178,13 @@ impl Evaluator {
                 alternative,
             } => self.eval_if(*condition, consequence, alternative, env),
             ExprType::Identifier(ident) => self.eval_identifier(ident, env, expr.line, expr.col),
-            ExprType::FnLiteral { params, body } => ResultObj::Copy(Object::FnExpr {
-                params,
-                body,
-                env: env.clone(),
-            }),
+            ExprType::FnLiteral { params, body } => {
+                ResultObj::Copy(Object::FnExpr(Box::new(FnExprObj {
+                    params,
+                    body,
+                    env: env.clone(),
+                })))
+            }
             ExprType::Call {
                 function,
                 arguments,
@@ -645,10 +647,10 @@ impl Evaluator {
             Some(obj) => obj,
             None => {
                 if let Some(func) = self.buildins_internal_fn.get(&ident) {
-                    return ResultObj::Copy(Object::BuildinFn {
+                    return ResultObj::Copy(Object::BuildinFn(Box::new(BuildinFnObj {
                         name: ident,
                         func: func.clone_box(),
-                    });
+                    })));
                 }
                 ResultObj::Copy(Object::Error(create_msg_err(
                     format!("El identicador `{}` no existe.", ident),
@@ -669,13 +671,26 @@ impl Evaluator {
         let col = function.col;
         let obj = self.eval_expression(function, env);
         match obj {
-            ResultObj::Copy(Object::FnExpr { params, body, env }) => {
-                self.eval_fn_expr(arguments, params, body, &env, line, col)
+            ResultObj::Copy(Object::FnExpr(fn_expr)) => self.eval_fn_expr(
+                arguments,
+                fn_expr.params,
+                fn_expr.body,
+                &fn_expr.env,
+                line,
+                col,
+            ),
+            ResultObj::Copy(Object::Fn(fn_expr)) => self.eval_fn_expr(
+                arguments,
+                fn_expr.params,
+                fn_expr.body,
+                &fn_expr.env,
+                line,
+                col,
+            ),
+            ResultObj::Copy(Object::BuildinFn(f)) => {
+                let func = f.func;
+                func(self, arguments, env)
             }
-            ResultObj::Copy(Object::Fn {
-                params, body, env, ..
-            }) => self.eval_fn_expr(arguments, params, body, &env, line, col),
-            ResultObj::Copy(Object::BuildinFn { func, .. }) => func(self, arguments, env),
             // TODO(Retornar errores previo)
             _ => ResultObj::Copy(Object::Error(create_msg_err(
                 "La operacion de llamada solo puede ser aplicada a objetos que sean funciones"
