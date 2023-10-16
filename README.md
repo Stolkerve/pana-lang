@@ -231,14 +231,14 @@ cadena(10) # -> "10"
 ### Version 0.2
 
 - ✅ Operador de acceso de miembros: **.**
-- ⬜ Acceso a funciones miembro de los tipos de datos:
-  - ⬜ lista: ~~agregar(), eliminar(), buscar(), concatenar(), indice(), insertar(), separar(), invertir()~~, ordenar(), ~~limpiar(), vacio()~~.
+- ✅ Acceso a funciones miembro de los tipos de datos:
+  - ✅ lista: ~~agregar(), eliminar(), buscar(), concatenar(), indice(), insertar(), separar(), invertir(), ordenar(), limpiar(), vacio()~~.
   - ✅ diccionario: ~~eliminar(), llaves(), valores(), limpiar()~~.
   - ✅ cadena: ~~caracteres(), concatenar(), buscar(), eliminar(), es_alpha(), es_numerico(), inicia_con(), insertat(), invertir(), mayusculas(), minusculas(), reemplazar(), recortar(), separar(), subcadena(), vacio()~~.
 
 ### Version 0.2.1
 
-- ⬜ Operadores de asignacion: +=, -=, \*=, /=, %=.
+- ✅ Operadores de asignacion: +=, -=, \*=, /=, %=.
 - ⬜ bucle for: para i; i < 10; 1 += 1.
 
 ### Version 0.3

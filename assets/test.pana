@@ -1,15 +1,12 @@
-# Ejemplo de fibonaci
+var a = 10;
+a += 22;
+imprimir(a);
+a -= 20;
+imprimir(a);
+a *= 2;
+imprimir(a);
 
-var lista = [1, 2, 3, 4];
-imprimir(lista);
-lista.eliminar(2);
-imprimir(lista);
-lista.limpiar();
-imprimir(lista);
-lista.agregar(5);
-lista.concatenar([6, 7, 8]);
-imprimir(lista);
-
-var str = "12345";
-imprimir(str.subcadea(0, 3));
-imprimir(str);
+a /= 2;
+imprimir(a);
+a %= 22;
+imprimir(a);

@@ -47,6 +47,41 @@ fn to_tokens_precedence(token: &TokenType) -> Precedence {
     }
 }
 
+fn create_funny_assigment(
+    ident: String,
+    op: TokenType,
+    right: Expression,
+    cur_line: usize,
+    cur_col: usize,
+    line: usize,
+    col: usize,
+) -> Expression {
+    Expression::new(
+        ExprType::Assignment {
+            left: Box::new(Expression::new(
+                ExprType::Identifier(ident.clone()),
+                cur_line,
+                cur_col,
+            )),
+            right: Box::new(Expression {
+                r#type: ExprType::Infix {
+                    left: Box::new(Expression::new(
+                        ExprType::Identifier(ident.clone()),
+                        cur_line,
+                        cur_col,
+                    )),
+                    right: Box::new(right),
+                    operator: op,
+                },
+                line,
+                col,
+            }),
+        },
+        cur_line,
+        cur_col,
+    )
+}
+
 pub struct Parser {
     lexer: Lexer,
     current_token: Token,
@@ -448,7 +483,7 @@ impl Parser {
                         self.next_token();
                         left_expr = self.parse_infix_expression(left_expr.unwrap());
                     }
-                    TokenType::Percnt => {
+                    TokenType::Percent => {
                         self.next_token();
                         left_expr = self.parse_infix_expression(left_expr.unwrap());
                     }
@@ -501,13 +536,23 @@ impl Parser {
     }
 
     fn parse_identifier(&mut self, ident: String) -> Result<Expression, ParserError> {
-        if !self.peek_token_is(TokenType::Assign) {
+        let peek_token;
+        if !matches!(
+            self.peek_token.r#type,
+            TokenType::Assign
+                | TokenType::PlusAssing
+                | TokenType::MinusAssing
+                | TokenType::SlashAssing
+                | TokenType::AsteriskAssing
+                | TokenType::PercentAssing
+        ) {
             return Ok(Expression::new(
                 ExprType::Identifier(ident),
                 self.current_token.line,
                 self.current_token.col,
             ));
         }
+        peek_token = self.peek_token.r#type.clone();
 
         self.next_token();
         self.next_token();
@@ -523,18 +568,69 @@ impl Parser {
             }
         }
 
-        Ok(Expression::new(
-            ExprType::Assignment {
-                left: Box::new(Expression::new(
-                    ExprType::Identifier(ident),
-                    self.current_token.line,
-                    self.current_token.col,
-                )),
-                right: Box::new(expr),
-            },
-            self.current_token.line,
-            self.current_token.col,
-        ))
+        let line = expr.line;
+        let col = expr.col;
+
+        match peek_token {
+            TokenType::Assign => Ok(Expression::new(
+                ExprType::Assignment {
+                    left: Box::new(Expression::new(
+                        ExprType::Identifier(ident),
+                        self.current_token.line,
+                        self.current_token.col,
+                    )),
+                    right: Box::new(expr),
+                },
+                self.current_token.line,
+                self.current_token.col,
+            )),
+            TokenType::PlusAssing => Ok(create_funny_assigment(
+                ident,
+                TokenType::Plus,
+                expr,
+                self.current_token.line,
+                self.current_token.col,
+                line,
+                col,
+            )),
+            TokenType::MinusAssing => Ok(create_funny_assigment(
+                ident,
+                TokenType::Minus,
+                expr,
+                self.current_token.line,
+                self.current_token.col,
+                line,
+                col,
+            )),
+            TokenType::AsteriskAssing => Ok(create_funny_assigment(
+                ident,
+                TokenType::Asterisk,
+                expr,
+                self.current_token.line,
+                self.current_token.col,
+                line,
+                col,
+            )),
+            TokenType::SlashAssing => Ok(create_funny_assigment(
+                ident,
+                TokenType::Slash,
+                expr,
+                self.current_token.line,
+                self.current_token.col,
+                line,
+                col,
+            )),
+            TokenType::PercentAssing => Ok(create_funny_assigment(
+                ident,
+                TokenType::Percent,
+                expr,
+                self.current_token.line,
+                self.current_token.col,
+                line,
+                col,
+            )),
+            _ => unreachable!(),
+        }
     }
 
     fn parse_prefix_expression(&mut self) -> Result<Expression, ParserError> {

@@ -438,7 +438,7 @@ impl Evaluator {
             TokenType::Minus => ResultObj::Copy(Object::Numeric(a - b)),
             TokenType::Slash => ResultObj::Copy(Object::Numeric(a / b)),
             TokenType::Asterisk => ResultObj::Copy(Object::Numeric(a * b)),
-            TokenType::Percnt => ResultObj::Copy(Object::Numeric(a % b)),
+            TokenType::Percent => ResultObj::Copy(Object::Numeric(a % b)),
             TokenType::Eq => ResultObj::Copy(Object::Boolean(a == b)),
             TokenType::NotEq => ResultObj::Copy(Object::Boolean(a != b)),
             TokenType::Lt => ResultObj::Copy(Object::Boolean(a < b)),

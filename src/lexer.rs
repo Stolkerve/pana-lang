@@ -320,11 +320,11 @@ impl Lexer {
         self.skip_whitespace();
         match self.current_char {
             '=' => self.read_2chars_token('=', TokenType::Eq, TokenType::Assign),
-            '+' => Token::new(TokenType::Plus, self.line, self.col),
-            '-' => Token::new(TokenType::Minus, self.line, self.col),
-            '/' => Token::new(TokenType::Slash, self.line, self.col),
-            '*' => Token::new(TokenType::Asterisk, self.line, self.col),
-            '%' => Token::new(TokenType::Percnt, self.line, self.col),
+            '+' => self.read_2chars_token('=', TokenType::PlusAssing, TokenType::Plus),
+            '-' => self.read_2chars_token('=', TokenType::MinusAssing, TokenType::Minus),
+            '/' => self.read_2chars_token('=', TokenType::SlashAssing, TokenType::Slash),
+            '*' => self.read_2chars_token('=', TokenType::AsteriskAssing, TokenType::Asterisk),
+            '%' => self.read_2chars_token('=', TokenType::PercentAssing, TokenType::Percent),
             '!' => self.read_2chars_token('=', TokenType::NotEq, TokenType::Bang),
             '<' => self.read_2chars_token('=', TokenType::LtEq, TokenType::Lt),
             '>' => self.read_2chars_token('=', TokenType::GtEq, TokenType::Gt),
