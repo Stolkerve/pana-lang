@@ -68,16 +68,6 @@ impl Evaluator {
         }
     }
 
-    pub fn create_msg_err(&self, msg: String, line: usize, col: usize) -> String {
-        if msg.chars().nth(0).unwrap() == '^' {
-            return msg[1..].to_string();
-        }
-        format!(
-            "Error de ejecución. {}. Linea {}, columna {}.",
-            msg, line, col
-        )
-    }
-
     pub fn eval_program(&mut self, statements: BlockStatement) -> ResultObj {
         self.stack_ctx.push_back(Context::Global);
         self.eval_block_statement(statements, &self.environment.clone())
@@ -118,7 +108,7 @@ impl Evaluator {
                         )));
                     }
                 }
-                ResultObj::Copy(Object::Error(self.create_msg_err(
+                ResultObj::Copy(Object::Error(create_msg_err(
                     "Solo se puede retornar dentro de funciones".into(),
                     line,
                     col,
@@ -131,7 +121,7 @@ impl Evaluator {
                     }
                     self.stack_ctx.pop_back();
                 }
-                ResultObj::Copy(Object::Error(self.create_msg_err(
+                ResultObj::Copy(Object::Error(create_msg_err(
                     "Solo se puede continuar en bucles".into(),
                     line,
                     col,
@@ -144,7 +134,7 @@ impl Evaluator {
                         _ => continue,
                     }
                 }
-                ResultObj::Copy(Object::Error(self.create_msg_err(
+                ResultObj::Copy(Object::Error(create_msg_err(
                     "Solo se puede romper condicionales y bucles".into(),
                     line,
                     col,
@@ -391,13 +381,13 @@ impl Evaluator {
                     }
                     match_member_fn(self, identifier, arguments, left, left_line, left_col, env)
                 }
-                _ => ResultObj::Copy(Object::Error(self.create_msg_err(
+                _ => ResultObj::Copy(Object::Error(create_msg_err(
                     "El operador de acceso de miembro espera un identicador o llamada".into(),
                     left_line,
                     left_col,
                 ))),
             },
-            _ => ResultObj::Copy(Object::Error(self.create_msg_err(
+            _ => ResultObj::Copy(Object::Error(create_msg_err(
                 format!(
                     "El operador de acceso de miembro no puede operar con una expresion {}",
                     right.r#type.get_type()
@@ -428,7 +418,7 @@ impl Evaluator {
         // match err
         match self.match_infix_ops(left, right, operator) {
             ResultObj::Copy(Object::Error(err)) => {
-                ResultObj::Copy(Object::Error(self.create_msg_err(err, line, col)))
+                ResultObj::Copy(Object::Error(create_msg_err(err, line, col)))
             }
             obj => obj,
         }
@@ -558,7 +548,7 @@ impl Evaluator {
         return match &left.r#type {
             ExprType::Identifier(ident) => {
                 if !self.exist_var(ident, env) {
-                    return ResultObj::Copy(Object::Error(self.create_msg_err(
+                    return ResultObj::Copy(Object::Error(create_msg_err(
                         format!("El no existe referencias hacia `{}`", ident),
                         left.line,
                         left.col,
@@ -584,7 +574,7 @@ impl Evaluator {
                     env,
                 )
             }
-            _ => ResultObj::Copy(Object::Error(self.create_msg_err(
+            _ => ResultObj::Copy(Object::Error(create_msg_err(
                 format!(
                     "No se puede realizar operaciones de asignacion a {}",
                     left.r#type
@@ -604,7 +594,7 @@ impl Evaluator {
     ) -> Option<ResultObj> {
         let env_ref = RefCell::borrow(env);
         env_ref.get(name).map(|_| -> ResultObj {
-            ResultObj::Copy(Object::Error(self.create_msg_err(
+            ResultObj::Copy(Object::Error(create_msg_err(
                 format!("El identificador `{}` ya habia sido declarado", name),
                 line,
                 col,
@@ -626,7 +616,7 @@ impl Evaluator {
                 Object::Error(_) => return value_obj,
                 Object::Return(ref returned_obj) => value_obj = *returned_obj.clone(),
                 Object::Void => {
-                    return ResultObj::Copy(Object::Error(self.create_msg_err(
+                    return ResultObj::Copy(Object::Error(create_msg_err(
                         "No se puede asignar el tipo de dato vacio a una variable".to_owned(),
                         line,
                         col,
@@ -660,7 +650,7 @@ impl Evaluator {
                         func: func.clone_box(),
                     });
                 }
-                ResultObj::Copy(Object::Error(self.create_msg_err(
+                ResultObj::Copy(Object::Error(create_msg_err(
                     format!("El identicador `{}` no existe.", ident),
                     line,
                     col,
@@ -669,7 +659,7 @@ impl Evaluator {
         }
     }
 
-    fn eval_call(
+    pub fn eval_call(
         &mut self,
         function: Expression,
         arguments: Vec<Expression>,
@@ -687,18 +677,16 @@ impl Evaluator {
             }) => self.eval_fn_expr(arguments, params, body, &env, line, col),
             ResultObj::Copy(Object::BuildinFn { func, .. }) => func(self, arguments, env),
             // TODO(Retornar errores previo)
-            _ => ResultObj::Copy(Object::Error(
-                self.create_msg_err(
-                    "La operacion de llamada solo puede ser aplicada a objetos que sean funciones"
-                        .to_owned(),
-                    line,
-                    col,
-                ),
-            )),
+            _ => ResultObj::Copy(Object::Error(create_msg_err(
+                "La operacion de llamada solo puede ser aplicada a objetos que sean funciones"
+                    .to_owned(),
+                line,
+                col,
+            ))),
         }
     }
 
-    fn eval_fn_expr(
+    pub fn eval_fn_expr(
         &mut self,
         arguments: FnParams,
         params: FnParams,
@@ -710,7 +698,7 @@ impl Evaluator {
         self.stack_ctx.push_back(Context::Fn);
         let scope_env = Rc::new(RefCell::new(Environment::new(Some(env.clone()))));
         if arguments.len() != params.len() {
-            return ResultObj::Copy(Object::Error(self.create_msg_err(
+            return ResultObj::Copy(Object::Error(create_msg_err(
                 format!(
                     "Se encontro {} argumentos, de {}.",
                     arguments.len(),
@@ -763,14 +751,12 @@ impl Evaluator {
         match left_obj {
             ResultObj::Copy(obj) => match obj {
                 Object::Error(msg) => ResultObj::Copy(Object::Error(msg)),
-                _ => ResultObj::Copy(Object::Error(
-                    self.create_msg_err(
-                        "Solo se puede usar el operador de indexar en listas y dicccionarios"
-                            .to_owned(),
-                        line,
-                        col,
-                    ),
-                )),
+                _ => ResultObj::Copy(Object::Error(create_msg_err(
+                    "Solo se puede usar el operador de indexar en listas y dicccionarios"
+                        .to_owned(),
+                    line,
+                    col,
+                ))),
             },
             ResultObj::Ref(obj) => match *obj.borrow_mut() {
                 Object::List(ref mut objs) => {
@@ -787,7 +773,7 @@ impl Evaluator {
                             None => ResultObj::Copy(Object::Null),
                         };
                     }
-                    ResultObj::Copy(Object::Error(self.create_msg_err(
+                    ResultObj::Copy(Object::Error(create_msg_err(
                         "El operador de indexar solo opera con enteros".to_owned(),
                         index_line,
                         index_col,
@@ -795,20 +781,18 @@ impl Evaluator {
                 }
                 Object::Dictionary(ref pairs) => match pairs.get(&index_obj) {
                     Some(obj) => obj.clone(),
-                    None => ResultObj::Copy(Object::Error(self.create_msg_err(
+                    None => ResultObj::Copy(Object::Error(create_msg_err(
                         format!("Llave invalida {}", index_obj.get_type()),
                         index_line,
                         index_col,
                     ))),
                 },
-                _ => ResultObj::Copy(Object::Error(
-                    self.create_msg_err(
-                        "Solo se puede usar el operador de indexar en listas y dicccionarios"
-                            .to_owned(),
-                        line,
-                        col,
-                    ),
-                )),
+                _ => ResultObj::Copy(Object::Error(create_msg_err(
+                    "Solo se puede usar el operador de indexar en listas y dicccionarios"
+                        .to_owned(),
+                    line,
+                    col,
+                ))),
             },
         }
     }
@@ -902,7 +886,7 @@ impl Evaluator {
             ResultObj::Copy(obj) => match obj {
                 Object::Numeric(Numeric::Int(int)) => Ok(int),
                 Object::Error(err) => Err(ResultObj::Copy(Object::Error(err))),
-                obj => Err(ResultObj::Copy(Object::Error(self.create_msg_err(
+                obj => Err(ResultObj::Copy(Object::Error(create_msg_err(
                     format!(
                         "No se soporta operaciones de rango con el tipo de dato `{}`",
                         obj.get_type()
@@ -913,7 +897,7 @@ impl Evaluator {
             },
             ResultObj::Ref(obj) => {
                 let obj = obj.borrow();
-                Err(ResultObj::Copy(Object::Error(self.create_msg_err(
+                Err(ResultObj::Copy(Object::Error(create_msg_err(
                     format!(
                         "No se soporta operaciones de rango con el tipo de dato `{}`",
                         obj.get_type()
@@ -935,7 +919,7 @@ impl Evaluator {
         env: &RcEnvironment,
     ) -> ResultObj {
         if self.exist_var(&ident, env) {
-            return ResultObj::Copy(Object::Error(self.create_msg_err(
+            return ResultObj::Copy(Object::Error(create_msg_err(
                 format!("Ya existe referencias hacia la variable `{}`", ident),
                 line,
                 col,
@@ -1001,13 +985,13 @@ impl Evaluator {
         }
 
         if end < 0 || steps < 0 {
-            return ResultObj::Copy(Object::Error(self.create_msg_err(
+            return ResultObj::Copy(Object::Error(create_msg_err(
                 "No se puede hacer operaciones de rango con numeros negativos".into(),
                 line,
                 col,
             )));
         } else if steps == 0 {
-            return ResultObj::Copy(Object::Error(self.create_msg_err(
+            return ResultObj::Copy(Object::Error(create_msg_err(
                 "Los pasos del rango debe ser mayor que 0".into(),
                 line,
                 col,
@@ -1020,7 +1004,7 @@ impl Evaluator {
             ResultObj::Copy(obj) => match obj {
                 Object::Numeric(Numeric::Int(begin)) => {
                     if begin < 0 {
-                        return ResultObj::Copy(Object::Error(self.create_msg_err(
+                        return ResultObj::Copy(Object::Error(create_msg_err(
                             "No se puede hacer operaciones de rango con numeros negativos".into(),
                             line,
                             col,
@@ -1059,7 +1043,7 @@ impl Evaluator {
                     }
                 }
                 obj => {
-                    return ResultObj::Copy(Object::Error(self.create_msg_err(
+                    return ResultObj::Copy(Object::Error(create_msg_err(
                         format!(
                             "No se soporta operaciones de rango con el tipo de dato `{}`",
                             obj.get_type()
@@ -1071,7 +1055,7 @@ impl Evaluator {
             },
             ResultObj::Ref(obj) => {
                 let obj = obj.borrow_mut().to_owned();
-                return ResultObj::Copy(Object::Error(self.create_msg_err(
+                return ResultObj::Copy(Object::Error(create_msg_err(
                     format!(
                         "No se soporta operaciones de rango con el tipo de dato `{}`",
                         obj.get_type()
@@ -1087,4 +1071,14 @@ impl Evaluator {
         }
         ResultObj::Copy(Object::Void)
     }
+}
+
+pub fn create_msg_err(msg: String, line: usize, col: usize) -> String {
+    if msg.chars().nth(0).unwrap() == '^' {
+        return msg[1..].to_string();
+    }
+    format!(
+        "Error de ejecución. {}. Linea {}, columna {}.",
+        msg, line, col
+    )
 }

@@ -181,6 +181,24 @@ impl PartialEq for ResultObj {
     }
 }
 
+impl PartialOrd for ResultObj {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match (self, other) {
+            (ResultObj::Ref(obj), ResultObj::Ref(obj2)) => {
+                match (&*obj.borrow(), &*obj2.borrow()) {
+                    (Object::String(str), Object::String(str2)) => str.partial_cmp(str2),
+                    (_, _) => None,
+                }
+            }
+            (ResultObj::Copy(obj), ResultObj::Copy(obj2)) => match (obj, obj2) {
+                (Object::Numeric(num), Object::Numeric(num2)) => num.partial_cmp(num2),
+                (_, _) => None,
+            },
+            (_, _) => None,
+        }
+    }
+}
+
 impl Display for ResultObj {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
